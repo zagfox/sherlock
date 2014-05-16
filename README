@@ -1,0 +1,17 @@
+Sherlock:
+A distributed lock service
+
+common:
+definition of interface and common value
+
+lockstore:
+backend storage for lock service
+
+backend:
+back service
+
+frontend:
+client usage
+
+cmd:
+runable files

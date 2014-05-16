@@ -21,6 +21,8 @@ const help = "Usage:"
 
 func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	var succ bool
+	var str string
+	var cList common.List
 
 	if len(args) < 2 {
 		fmt.Println("bad command, try \"help\".")
@@ -30,12 +32,21 @@ func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	cmd := args[0]
 	lu := common.LUpair{Lockname: args[1], Username: *uname}
 	switch cmd {
+	case "u":
+		*uname = args[1]
+		fmt.Println(*uname)
 	case "a":
 		logError(s.Acquire(lu, &succ))
 		fmt.Println(succ)
 	case "r":
 		logError(s.Release(lu, &succ))
 		fmt.Println(succ)
+	case "e":
+		logError(s.ListEntry(args[1], &str))
+		fmt.Println(str)
+	case "q":
+		logError(s.ListQueue(args[1], &cList))
+		fmt.Println(cList)
 	default:
 		logError(fmt.Errorf("bad command, try \"help\"."))
 	}
@@ -43,7 +54,7 @@ func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 }
 
 func runPrompt(s common.LockStoreIf) {
-	var uname string
+	uname := "default"
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("> ")

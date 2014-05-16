@@ -40,14 +40,13 @@ func (self *client) Acquire(lu common.LUpair, succ *bool) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
+
 	for e := self.srv.Call("LockStore.Acquire", lu, succ); e != nil; {
-		//fmt.Println(e)
-		if e := self.connect(false); e != nil {
+		if e = self.connect(false); e != nil {
 			return e
 		}
 	}
 	return nil
-
 }
 
 func (self *client) Release(lu common.LUpair, succ *bool) error {
@@ -55,9 +54,37 @@ func (self *client) Release(lu common.LUpair, succ *bool) error {
 		return e
 	}
 	for e := self.srv.Call("LockStore.Release", lu, succ); e != nil; {
-		if e := self.connect(false); e != nil {
+		if e = self.connect(false); e != nil {
 			return e
 		}
 	}
 	return nil
 }
+
+func (self *client) ListEntry(lname string, uname *string) error {
+	if e := self.connect(true); e != nil {
+		return e
+	}
+	for e := self.srv.Call("LockStore.ListEntry", lname, uname); e != nil; {
+		if e = self.connect(false); e != nil {
+			return e
+		}
+	}
+	return nil
+
+}
+
+func (self *client) ListQueue(lname string, cList *common.List) error {
+	if e := self.connect(true); e != nil {
+		return e
+	}
+	for e := self.srv.Call("LockStore.ListQueue", lname, cList); e != nil; {
+		if e = self.connect(false); e != nil {
+			return e
+		}
+	}
+
+	return nil
+}
+
+
