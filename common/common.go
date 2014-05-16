@@ -5,7 +5,7 @@ type LUpair struct {
 	Username string
 }
 
-type SherlockIf interface {
+type LockStoreIf interface {
 	// Acquire a lock, input should be {lname, unmae}
 	Acquire(lu LUpair, succ *bool) error
 
@@ -16,6 +16,6 @@ type SherlockIf interface {
 // Backend config
 type BackConfig struct {
     Addr  string      // listen address
-    Store SherlockIf      // the underlying storage it should use
+    LockStore LockStoreIf      // the underlying storage it should use
     Ready chan<- bool // send a value when server is ready
 }

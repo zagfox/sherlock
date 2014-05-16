@@ -10,7 +10,7 @@ import (
 )
 
 var (
-    addr = flag.String("addr", "localhost:22222", "server listen address")
+    addr = flag.String("addr", "localhost:23455", "server listen address")
 )
 
 func main() {
@@ -19,11 +19,11 @@ func main() {
 
 	// Create backconfig
 	s := lockstore.NewLockStore()
-	ready := make(chan bool)
+	//ready := make(chan bool)
 	backconfig := common.BackConfig{
 		Addr:     *addr,
-		Store:    common.SherlockIf(s),
-		Ready:    ready,
+		LockStore:    s,
+		Ready:    nil,
 	}
 
 	// start a back-end

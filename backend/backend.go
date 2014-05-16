@@ -20,7 +20,7 @@ func ServeBack(b *common.BackConfig) error {
 	}
 
 	rpcServer := rpc.NewServer()
-	e = rpcServer.Register(b.Store)
+	e = rpcServer.Register(b.LockStore)
 
 	if e != nil {
 		if b.Ready != nil {

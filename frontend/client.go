@@ -3,7 +3,7 @@
 package frontend
 
 import (
-	//  "fmt"
+	//"fmt"
 	"net/rpc"
 	"sync"
 
@@ -16,7 +16,7 @@ type client struct {
 	lock sync.Mutex
 }
 
-func NewClient(addr string) common.SherlockIf {
+func NewClient(addr string) common.LockStoreIf {
 	return &client{addr: addr}
 }
 
@@ -40,7 +40,8 @@ func (self *client) Acquire(lu common.LUpair, succ *bool) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
-	for e := self.srv.Call("Storage.Acquire", lu, succ); e != nil; {
+	for e := self.srv.Call("LockStore.Acquire", lu, succ); e != nil; {
+		//fmt.Println(e)
 		if e := self.connect(false); e != nil {
 			return e
 		}
@@ -53,7 +54,7 @@ func (self *client) Release(lu common.LUpair, succ *bool) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
-	for e := self.srv.Call("Storage.Release", lu, succ); e != nil; {
+	for e := self.srv.Call("LockStore.Release", lu, succ); e != nil; {
 		if e := self.connect(false); e != nil {
 			return e
 		}

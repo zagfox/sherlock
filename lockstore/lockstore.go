@@ -7,7 +7,7 @@ import (
 	"sherlock/common"
 )
 
-var _ common.SherlockIf = new(LockStore)
+var _ common.LockStoreIf = new(LockStore)
 
 //struct to store lock infomation
 type LockStore struct {

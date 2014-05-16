@@ -19,7 +19,7 @@ func logError(e error) {
 
 const help = "Usage:"
 
-func runCmd(uname *string, s common.SherlockIf, args []string) bool {
+func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	var succ bool
 
 	if len(args) < 2 {
@@ -42,7 +42,7 @@ func runCmd(uname *string, s common.SherlockIf, args []string) bool {
 	return false
 }
 
-func runPrompt(s common.SherlockIf) {
+func runPrompt(s common.LockStoreIf) {
 	var uname string
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	addr := args[0]
-	s := frontend.NewClient(addr)
+	c := frontend.NewClient(addr)
 
-	runPrompt(s)
+	runPrompt(c)
 }
