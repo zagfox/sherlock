@@ -9,6 +9,7 @@ type List struct {
 	L []string
 }
 
+// Interface to call a lock operation
 type LockStoreIf interface {
 	// Acquire a lock, input should be {lname, unmae}
 	Acquire(lu LUpair, succ *bool) error
@@ -21,6 +22,11 @@ type LockStoreIf interface {
 
 	// Show the lock acquire queue
 	ListQueue(lname string, cList *List) error
+}
+
+// Interface for msg send/recv 
+type MessageIf interface {
+	Msg(msg string, succ *bool) error
 }
 
 // Backend config

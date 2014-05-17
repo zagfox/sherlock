@@ -2,10 +2,11 @@
 package lockstore
 
 import (
+	"fmt"
 	"sync"
 	//"errors"
 	"sherlock/common"
-	"fmt"
+	//"sherlock/message"
 )
 
 var _ common.LockStoreIf = new(LockStore)
