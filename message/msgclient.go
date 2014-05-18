@@ -1,6 +1,7 @@
 package message
 
 import (
+	//"fmt"
 	"net/rpc"
 	"sherlock/common"
 	"sync"
@@ -40,7 +41,8 @@ func (self *MsgClient) Msg(msg string, succ *bool) error {
 		return e
 	}
 
-	for e := self.srv.Call("MsgHandler.Msg", msg, succ); e != nil; {
+	e := self.srv.Call("MsgListener.Msg", msg, succ)
+	for ; e != nil; e = self.srv.Call("MsgListener.Msg", msg, succ) {
 		if e = self.connect(false); e != nil {
 			return e
 		}

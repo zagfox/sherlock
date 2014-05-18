@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"sherlock/common"
-	"sherlock/frontend"
+	"sherlock/message"
 )
 
 func logError(e error) {
@@ -18,15 +18,15 @@ func logError(e error) {
 }
 
 const help = `Usage:\n
-	acquire lock: a lockname;\n
-	release lock: r lockname;\n
-	show entry:   e lockname;\n
-	show queue:   q lockname;\n`
+	send msg: m lockname;\n`
 
-func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
+func runCmd(s common.MessageIf, args []string) bool {
 	var succ bool
-	var str string
-	var cList common.List
+
+	if len(args)==1 && args[0]== "help" {
+		fmt.Println(help)
+		return true
+	}
 
 	if len(args) < 2 {
 		fmt.Println("bad command, try \"help\".")
@@ -34,31 +34,18 @@ func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	}
 
 	cmd := args[0]
-	lu := common.LUpair{Lockname: args[1], Username: *uname}
+	msg := args[1]
 	switch cmd {
-	case "u":
-		*uname = args[1]
-		fmt.Println(*uname)
-	case "a":
-		logError(s.Acquire(lu, &succ))
+	case "m":
+		logError(s.Msg(msg, &succ))
 		fmt.Println(succ)
-	case "r":
-		logError(s.Release(lu, &succ))
-		fmt.Println(succ)
-	case "e":
-		logError(s.ListEntry(args[1], &str))
-		fmt.Println(str)
-	case "q":
-		logError(s.ListQueue(args[1], &cList))
-		fmt.Println(cList)
 	default:
 		logError(fmt.Errorf("bad command, try \"help\"."))
 	}
 	return false
 }
 
-func runPrompt(s common.LockStoreIf) {
-	uname := "default"
+func runPrompt(s common.MessageIf) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("> ")
@@ -67,7 +54,7 @@ func runPrompt(s common.LockStoreIf) {
 		line := scanner.Text()
 		args := strings.Fields(line)
 		if len(args) > 0 {
-			if runCmd(&uname, s, args) {
+			if runCmd(s, args) {
 				break
 			}
 		}
@@ -89,7 +76,7 @@ func main() {
 	}
 
 	addr := args[0]
-	c := frontend.NewClient(addr)
+	c := message.NewMsgClient(addr)
 
 	runPrompt(c)
 }

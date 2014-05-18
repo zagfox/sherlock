@@ -20,7 +20,7 @@ func ServeBack(b *common.MsgConfig) error {
 	}
 
 	rpcServer := rpc.NewServer()
-	e = rpcServer.Register(b.MsgHandler)
+	e = rpcServer.Register(b.MsgListener)
 
 	if e != nil {
 		if b.Ready != nil {

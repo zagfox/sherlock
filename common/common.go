@@ -40,6 +40,6 @@ type MessageIf interface {
 // Config for msg receive server
 type MsgConfig struct {
 	Addr string
-	MsgHandler MessageIf
+	MsgListener MessageIf
 	Ready chan<- bool
 }

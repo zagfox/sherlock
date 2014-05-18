@@ -2,9 +2,11 @@
 package lockstore
 
 import (
-	"fmt"
+	//"fmt"
+	"errors"
+	"container/list"
 	"sync"
-	//"errors"
+
 	"sherlock/common"
 	//"sherlock/message"
 )
@@ -13,79 +15,91 @@ var _ common.LockStoreIf = new(LockStore)
 
 //struct to store lock infomation
 type LockStore struct {
-    entry map[string]string
-	queue  []common.LUpair
+	//entry map[string]string
+	mqueue map[string]*list.List
 
-	enLock sync.Mutex
+	//enLock sync.Mutex
 	quLock sync.Mutex
 }
 
 func NewLockStore() *LockStore {
 	//TODO:Start a thread here to examine the lock lease
-	return &LockStore {
-		entry: make(map[string]string),
-		queue: make([]common.LUpair, 0),        //store queue, need use append to make it longer
+	return &LockStore{
+		//entry: make(map[string]string),
+		//queue: make(map[string][]common.LUpair),        //store queue, need use append to make it longer
+		mqueue: make(map[string]*list.List),
+		//qulock: make(map[string]sync.Mutex),
 	}
 }
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
-	self.enLock.Lock()
-	defer self.enLock.Unlock()
+	self.quLock.Lock()
+	defer self.quLock.Unlock()
 
-	// Check args number
 	lname := lu.Lockname
-	uname := lu.Username
 
 	// Implement func
-	value, ok := self.entry[lname]
+	_, ok := self.mqueue[lname]
 	if ok {
 		*succ = false
-		if value == uname {
-			//put in queue
-			self.appendQueue(lu)
-		}
 	} else {
 		// if lock entry not found, acquire it
-		self.entry[lname] = uname
+		que := list.New()
+		self.mqueue[lname] = que
 		*succ = true
 	}
 
-    return nil
+	//put in queue
+	self.appendQueue(lu)
+
+	return nil
 }
 
 func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
-	self.enLock.Lock()
-	defer self.enLock.Unlock()
+	self.quLock.Lock()
+	defer self.quLock.Unlock()
 
 	// Check args number
 	lname := lu.Lockname
 	uname := lu.Username
 
-	// Implement func
-	value, ok := self.entry[lname]
-	if ok {
-		//if found it and name is correct, release it
-		if value == uname {
-			delete(self.entry, lname)
-			*succ = true
-			self.updateRelease(lu)
-		} else {
-			*succ = false
+	// Check if queue exist
+	q, ok := self.mqueue[lname]
+	if !ok {
+		*succ = false
+		return nil
+	}
+
+	// Check if queue has value
+	if q.Len() == 0 {
+		delete(self.mqueue, lname)
+		*succ = false
+		return nil
+	}
+
+	//if found it and name is correct, release it
+	if q.Front().Value.(string) == uname {
+		q.Remove(q.Front())
+		if q.Len() == 0 {
+			delete(self.mqueue, lname)
 		}
+		*succ = true
+		// Notify other user
+		self.updateRelease(lu)
 	} else {
 		*succ = false
 	}
-    return nil
+	return nil
 }
 
 func (self *LockStore) ListEntry(lname string, uname *string) error {
-	self.enLock.Lock()
+	/*self.enLock.Lock()
 	defer self.enLock.Unlock()
 
 	fmt.Println(self.entry)
 	v, _ := self.entry[lname]
-	*uname = v
+	*uname = v*/
 	return nil
 }
 
@@ -93,9 +107,9 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
 
-	for _, v := range self.queue {
+	/*for _, v := range self.queues {
 		cList.L = append(cList.L, v.Lockname+":"+v.Username)
-	}
+	}*/
 	return nil
 }
 
@@ -106,23 +120,28 @@ func (self *LockStore) updateRelease(lu common.LUpair) error {
 
 // Append a "Acquire" request to queue
 // Eliminate duplicate here
+//No lock here cause the caller should have lock
 func (self *LockStore) appendQueue(lu common.LUpair) error {
-	self.quLock.Lock()
-	defer self.quLock.Unlock()
 
-	exist := false
+	q, ok := self.mqueue[lu.Lockname]
+	if !ok {
+		return errors.New("queue not found")
+	}
+
 	//check if exist
-	for _, v := range self.queue {
-		if lu == v {
+	exist := false
+
+	for v := q.Front(); v != nil; v = v.Next() {
+		if lu.Username == v.Value.(string) {
 			exist = true
 		}
 	}
+
 	if !exist {
 		//append it
-		self.queue = append(self.queue, lu)
+		q.PushBack(lu.Username)
 	} else {
 	}
 
 	return nil
 }
-
