@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"sherlock/common"
+	//"sherlock/message"
 )
 
 type client struct {
@@ -17,6 +18,21 @@ type client struct {
 }
 
 func NewClient(addr string) common.LockStoreIf {
+	/*// Create backconfig
+	h := message.NewMsgHandler()
+	//ready := make(chan bool)
+	msgconfig := common.MsgConfig{
+		Addr:      addr,
+		LockStore: h,
+		Ready:     nil,
+	}
+
+	// start a back-end
+	fmt.Println(addr)
+	go message.ServeBack(&msgconfig)
+	*/
+
+	//return client struct
 	return &client{addr: addr}
 }
 
@@ -86,5 +102,3 @@ func (self *client) ListQueue(lname string, cList *common.List) error {
 
 	return nil
 }
-
-

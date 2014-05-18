@@ -2,8 +2,8 @@ package message
 
 import (
 	"net/rpc"
-	"sync"
 	"sherlock/common"
+	"sync"
 )
 
 var _ common.MessageIf = new(MsgClient)

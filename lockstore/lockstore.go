@@ -21,6 +21,7 @@ type LockStore struct {
 }
 
 func NewLockStore() *LockStore {
+	//TODO:Start a thread here to examine the lock lease
 	return &LockStore {
 		entry: make(map[string]string),
 		queue: make([]common.LUpair, 0),        //store queue, need use append to make it longer
@@ -103,6 +104,8 @@ func (self *LockStore) updateRelease(lu common.LUpair) error {
 	return nil
 }
 
+// Append a "Acquire" request to queue
+// Eliminate duplicate here
 func (self *LockStore) appendQueue(lu common.LUpair) error {
 	self.quLock.Lock()
 	defer self.quLock.Unlock()

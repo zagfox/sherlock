@@ -24,14 +24,22 @@ type LockStoreIf interface {
 	ListQueue(lname string, cList *List) error
 }
 
-// Interface for msg send/recv 
-type MessageIf interface {
-	Msg(msg string, succ *bool) error
-}
 
 // Backend config
 type BackConfig struct {
     Addr  string      // listen address
     LockStore LockStoreIf      // the underlying storage it should use
     Ready chan<- bool // send a value when server is ready
+}
+
+// Interface for msg send/recv 
+type MessageIf interface {
+	Msg(msg string, succ *bool) error
+}
+
+// Config for msg receive server
+type MsgConfig struct {
+	Addr string
+	MsgHandler MessageIf
+	Ready chan<- bool
 }

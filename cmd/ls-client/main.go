@@ -17,7 +17,11 @@ func logError(e error) {
 	}
 }
 
-const help = "Usage:"
+const help = `Usage:\n
+	acquire lock: a lockname;\n
+	release lock: r lockname;\n
+	show entry:   e lockname;\n
+	show queue:   q any;\n`
 
 func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	var succ bool
