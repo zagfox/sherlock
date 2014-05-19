@@ -3,7 +3,7 @@
 package frontend
 
 import (
-	//"fmt"
+	"fmt"
 	"net/rpc"
 	"sync"
 
@@ -18,20 +18,6 @@ type client struct {
 }
 
 func NewClient(addr string) common.LockStoreIf {
-	/*// Create backconfig
-	h := message.NewMsgHandler()
-	//ready := make(chan bool)
-	msgconfig := common.MsgConfig{
-		Addr:      addr,
-		LockStore: h,
-		Ready:     nil,
-	}
-
-	// start a back-end
-	fmt.Println(addr)
-	go message.ServeBack(&msgconfig)
-	*/
-
 	//return client struct
 	return &client{addr: addr}
 }
@@ -58,7 +44,8 @@ func (self *client) Acquire(lu common.LUpair, succ *bool) error {
 	}
 
 	e := self.srv.Call("LockStore.Acquire", lu, succ)
-	for ; e != nil;e = self.srv.Call("LockStore.Acquire", lu, succ) {
+	for ; e != nil; e = self.srv.Call("LockStore.Acquire", lu, succ) {
+		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
 		}
@@ -73,6 +60,7 @@ func (self *client) Release(lu common.LUpair, succ *bool) error {
 
 	e := self.srv.Call("LockStore.Release", lu, succ)
 	for ; e != nil; e = self.srv.Call("LockStore.Release", lu, succ) {
+		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
 		}
@@ -80,20 +68,21 @@ func (self *client) Release(lu common.LUpair, succ *bool) error {
 	return nil
 }
 
+/*
 func (self *client) ListEntry(lname string, uname *string) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
 
 	e := self.srv.Call("LockStore.ListEntry", lname, uname)
-	for ; e != nil; e = self.srv.Call("LockStore.ListEntry", lname, uname){
+	for ; e != nil; e = self.srv.Call("LockStore.ListEntry", lname, uname) {
 		if e = self.connect(false); e != nil {
 			return e
 		}
 	}
 	return nil
-
 }
+*/
 
 func (self *client) ListQueue(lname string, cList *common.List) error {
 	if e := self.connect(true); e != nil {
@@ -101,7 +90,8 @@ func (self *client) ListQueue(lname string, cList *common.List) error {
 	}
 
 	e := self.srv.Call("LockStore.ListQueue", lname, cList)
-	for ; e != nil; e = self.srv.Call("LockStore.ListQueue", lname, cList){
+	for ; e != nil; e = self.srv.Call("LockStore.ListQueue", lname, cList) {
+		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
 		}

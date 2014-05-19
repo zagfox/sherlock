@@ -17,14 +17,13 @@ func logError(e error) {
 	}
 }
 
-const flaghelp = `Usage:
-	server addr, listen addr`
 const help = `Usage:\n
 	acquire lock: a lockname;\n
 	release lock: r lockname;\n
+	show entry:   e lockname;\n
 	show queue:   q lockname;\n`
 
-func runCmd(s common.LockStoreIf, args []string) bool {
+func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 	var succ bool
 	//var str string
 	var cList common.List
@@ -35,8 +34,11 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 	}
 
 	cmd := args[0]
-	lu := common.LUpair{Lockname: args[1], Username: "default"}
+	lu := common.LUpair{Lockname: args[1], Username: *uname}
 	switch cmd {
+	case "u":
+		*uname = args[1]
+		fmt.Println(*uname)
 	case "a":
 		logError(s.Acquire(lu, &succ))
 		fmt.Println(succ)
@@ -58,6 +60,7 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 }
 
 func runPrompt(s common.LockStoreIf) {
+	uname := "default"
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("> ")
@@ -66,7 +69,7 @@ func runPrompt(s common.LockStoreIf) {
 		line := scanner.Text()
 		args := strings.Fields(line)
 		if len(args) > 0 {
-			if runCmd(s, args) {
+			if runCmd(&uname, s, args) {
 				break
 			}
 		}
@@ -82,14 +85,13 @@ func runPrompt(s common.LockStoreIf) {
 func main() {
 	flag.Parse()
 	args := flag.Args()
-	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr, flaghelp)
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, help)
 		os.Exit(1)
 	}
 
-	saddr := args[0]
-	laddr := args[1]
-	c := frontend.NewLockClient(saddr, laddr)
+	addr := args[0]
+	c := frontend.NewClient(addr)
 
 	runPrompt(c)
 }

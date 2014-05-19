@@ -3,30 +3,25 @@ package lockstore
 
 import (
 	//"fmt"
-	"errors"
+	//"errors"
 	"container/list"
 	"sync"
 
 	"sherlock/common"
-	//"sherlock/message"
+	"sherlock/message"
 )
 
 var _ common.LockStoreIf = new(LockStore)
 
 //struct to store lock infomation
 type LockStore struct {
-	//entry map[string]string
 	mqueue map[string]*list.List
-
-	//enLock sync.Mutex
 	quLock sync.Mutex
 }
 
 func NewLockStore() *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
-		//entry: make(map[string]string),
-		//queue: make(map[string][]common.LUpair),        //store queue, need use append to make it longer
 		mqueue: make(map[string]*list.List),
 		//qulock: make(map[string]sync.Mutex),
 	}
@@ -86,20 +81,10 @@ func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
 		}
 		*succ = true
 		// Notify other user
-		self.updateRelease(lu)
+		self.updateRelease(lu.Lockname)
 	} else {
 		*succ = false
 	}
-	return nil
-}
-
-func (self *LockStore) ListEntry(lname string, uname *string) error {
-	/*self.enLock.Lock()
-	defer self.enLock.Unlock()
-
-	fmt.Println(self.entry)
-	v, _ := self.entry[lname]
-	*uname = v*/
 	return nil
 }
 
@@ -107,14 +92,38 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
 
-	/*for _, v := range self.queues {
-		cList.L = append(cList.L, v.Lockname+":"+v.Username)
-	}*/
+	if cList == nil {
+		//return errors.New("cList is nil")
+		return nil
+	}
+	cList.L = make([]string, 0)
+
+	q, ok := self.mqueue[lname]
+	if !ok {
+		//return errors.New("queue not found")
+		return nil
+	}
+	for v := q.Front(); v != nil; v = v.Next() {
+		cList.L = append(cList.L, v.Value.(string))
+	}
 	return nil
 }
 
-func (self *LockStore) updateRelease(lu common.LUpair) error {
-	//if anyone waiting, find it and send Event
+func (self *LockStore) updateRelease(lname string) error {
+	// if anyone waiting, find it and send Event
+	q, ok := self.mqueue[lname]
+	if !ok {
+		return nil
+	}
+	if q.Len() == 0 {
+		return nil
+	}
+	uname := q.Front().Value.(string)
+
+	var succ bool
+	sender := message.NewMsgClient(uname)
+	sender.Msg("acquire:" + lname, &succ)
+
 	return nil
 }
 
@@ -122,10 +131,12 @@ func (self *LockStore) updateRelease(lu common.LUpair) error {
 // Eliminate duplicate here
 //No lock here cause the caller should have lock
 func (self *LockStore) appendQueue(lu common.LUpair) error {
+	//fmt.Println("append queue")
 
 	q, ok := self.mqueue[lu.Lockname]
 	if !ok {
-		return errors.New("queue not found")
+		//return errors.New("queue not found")
+		return nil
 	}
 
 	//check if exist
@@ -140,7 +151,6 @@ func (self *LockStore) appendQueue(lu common.LUpair) error {
 	if !exist {
 		//append it
 		q.PushBack(lu.Username)
-	} else {
 	}
 
 	return nil
