@@ -9,6 +9,12 @@ type List struct {
 	L []string
 }
 
+type Event struct {
+	Name  string
+	Lockname string
+	Username string
+}
+
 // Interface to call a lock operation
 type LockStoreIf interface {
 	// Acquire a lock, input should be {lname, unmae}

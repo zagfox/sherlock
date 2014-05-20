@@ -6,6 +6,7 @@ import (
 	//"errors"
 	"container/list"
 	"sync"
+	"encoding/json"
 
 	"sherlock/common"
 	"sherlock/message"
@@ -33,12 +34,14 @@ func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
 	defer self.quLock.Unlock()
 
 	lname := lu.Lockname
+	//uname := lu.Username
 
-	//TODO, basic semantic
+	// TODO, basic semantic
 	// Implement func
 	_, ok := self.mqueue[lname]
 	if ok {
-		//what if holder is itself?
+		// what if holder is itself?
+		// Or it request lock before
 		*succ = false
 	} else {
 		// if lock entry not found, acquire it
@@ -53,6 +56,7 @@ func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
 	return nil
 }
 
+// If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
@@ -77,13 +81,14 @@ func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
 
 	//if found it and name is correct, release it
 	if q.Front().Value.(string) == uname {
+		*succ = true
 		q.Remove(q.Front())
 		if q.Len() == 0 {
 			delete(self.mqueue, lname)
+		} else {
+			// Notify other user
+			self.updateRelease(lu.Lockname)
 		}
-		*succ = true
-		// Notify other user
-		self.updateRelease(lu.Lockname)
 	} else {
 		*succ = false
 	}
@@ -124,7 +129,8 @@ func (self *LockStore) updateRelease(lname string) error {
 
 	var succ bool
 	sender := message.NewMsgClient(uname)
-	sender.Msg("acquire:" + lname, &succ)
+	bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
+	sender.Msg(string(bytes), &succ)
 
 	return nil
 }
@@ -140,17 +146,19 @@ func (self *LockStore) appendQueue(lu common.LUpair) error {
 		return nil
 	}
 
-	// NO Eliminate duplicate here
+	// Eliminate duplicate here
 	// check if exist
-	/*exist := false
+	exist := false
 	for v := q.Front(); v != nil; v = v.Next() {
 		if lu.Username == v.Value.(string) {
 			exist = true
 		}
-	}*/
+	}
 
 	//append it
-	q.PushBack(lu.Username)
+	if !exist {
+		q.PushBack(lu.Username)
+	}
 
 	return nil
 }

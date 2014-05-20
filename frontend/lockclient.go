@@ -4,6 +4,7 @@ package frontend
 
 import (
 	"fmt"
+	"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
 )
@@ -48,10 +49,16 @@ func (self *lockclient) startMsgListener() {
 func (self *lockclient) startMsgHandler() {
 	for {
 		// Read event string from channel
-		event := <-self.ch
-		fmt.Println(event)
-		//first write in this way
-		self.acqOk<- event
+		bytes := <-self.ch
+		fmt.Println(bytes)
+
+		//unmarshall it and handle it
+		var event common.Event
+		json.Unmarshal([]byte(bytes), &event)
+		// if event is acqSucc and parameter correct
+		if event.Name == "acqOk" && event.Username == self.laddr {
+			self.acqOk<- bytes
+		}
 	}
 }
 
@@ -65,6 +72,7 @@ func (self *lockclient) Acquire(lu common.LUpair, succ *bool) error {
 	if *succ == true {
 		return nil
 	}
+
 	//block and wait for set free
 	<-self.acqOk
 	*succ = true
