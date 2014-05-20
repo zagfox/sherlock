@@ -16,12 +16,15 @@ type lockclient struct {
 	ch chan string        //chan for listen
 	laddr string			//addr for client listening
 	lpid int                //pid for listen thread
+
+	acqOk chan string       //Chan to send acquire ok
 }
 
 func NewLockClient(saddr, laddr string) common.LockStoreIf {
 	ch := make(chan string, 1000) //make a channel
 	clt := NewClient(saddr)
-	lc := lockclient{saddr:saddr, clt:clt, laddr:laddr, ch:ch}
+	acqOk := make(chan string, 1000)
+	lc := lockclient{saddr:saddr, clt:clt, laddr:laddr, ch:ch, acqOk:acqOk}
 
 	lc.startMsgListener()
 	go lc.startMsgHandler()
@@ -47,12 +50,25 @@ func (self *lockclient) startMsgHandler() {
 		// Read event string from channel
 		event := <-self.ch
 		fmt.Println(event)
+		//first write in this way
+		self.acqOk<- event
 	}
 }
 
 func (self *lockclient) Acquire(lu common.LUpair, succ *bool) error {
 	lu.Username = self.laddr
-	return self.clt.Acquire(lu, succ)
+	err := self.clt.Acquire(lu, succ)
+	if err != nil {
+		return err
+	}
+
+	if *succ == true {
+		return nil
+	}
+	//block and wait for set free
+	<-self.acqOk
+	*succ = true
+	return nil
 }
 
 func (self *lockclient) Release(lu common.LUpair, succ *bool) error {

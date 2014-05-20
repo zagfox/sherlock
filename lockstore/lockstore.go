@@ -34,9 +34,11 @@ func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
 
 	lname := lu.Lockname
 
+	//TODO, basic semantic
 	// Implement func
 	_, ok := self.mqueue[lname]
 	if ok {
+		//what if holder is itself?
 		*succ = false
 	} else {
 		// if lock entry not found, acquire it
@@ -128,7 +130,6 @@ func (self *LockStore) updateRelease(lname string) error {
 }
 
 // Append a "Acquire" request to queue
-// Eliminate duplicate here
 //No lock here cause the caller should have lock
 func (self *LockStore) appendQueue(lu common.LUpair) error {
 	//fmt.Println("append queue")
@@ -139,19 +140,17 @@ func (self *LockStore) appendQueue(lu common.LUpair) error {
 		return nil
 	}
 
-	//check if exist
-	exist := false
-
+	// NO Eliminate duplicate here
+	// check if exist
+	/*exist := false
 	for v := q.Front(); v != nil; v = v.Next() {
 		if lu.Username == v.Value.(string) {
 			exist = true
 		}
-	}
+	}*/
 
-	if !exist {
-		//append it
-		q.PushBack(lu.Username)
-	}
+	//append it
+	q.PushBack(lu.Username)
 
 	return nil
 }
