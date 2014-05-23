@@ -130,6 +130,7 @@ func (self *LockStore) updateRelease(lname string) error {
 	var succ bool
 	sender := message.NewMsgClient(uname)
 	bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
+	//fmt.Println("notify")
 	sender.Msg(string(bytes), &succ)
 
 	return nil

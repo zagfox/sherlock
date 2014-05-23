@@ -1,4 +1,4 @@
-//Lock service frontend client
+// Lock service frontend client
 
 package frontend
 

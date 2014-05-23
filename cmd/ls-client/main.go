@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"bufio"
 	"flag"
-	"fmt"
 	"os"
 	"strings"
+	"strconv"
 
 	"sherlock/common"
 	"sherlock/frontend"
@@ -18,11 +20,15 @@ func logError(e error) {
 }
 
 const flaghelp = `Usage:
-	server addr, listen addr`
+	client config id`
 const help = `Usage:\n
 	acquire lock: a lockname;\n
 	release lock: r lockname;\n
 	show queue:   q lockname;\n`
+
+var (
+	frc = flag.String("rc", common.DefaultRCPath, "config file")
+)
 
 func runCmd(s common.LockStoreIf, args []string) bool {
 	var succ bool
@@ -81,14 +87,25 @@ func runPrompt(s common.LockStoreIf) {
 
 func main() {
 	flag.Parse()
+
 	args := flag.Args()
-	if len(args) < 2 {
+	if len(args) < 1 {
 		fmt.Fprintln(os.Stderr, flaghelp)
 		os.Exit(1)
 	}
+	cid, e := strconv.Atoi(args[0])
+	if e != nil {
+		log.Fatal(e)
+	}
+	// Load rc
+	var rc *common.RC
+	rc, e = common.LoadRC(*frc)
+	if e != nil {
+		log.Fatal(e)
+	}
 
-	saddr := args[0]
-	laddr := args[1]
+	saddr := rc.SrvPorts[0]
+	laddr := rc.CltMsgPorts[cid]
 	c := frontend.NewLockClient(saddr, laddr)
 
 	runPrompt(c)

@@ -1,0 +1,28 @@
+{
+    "SrvPorts": [
+        "localhost:22000",
+        "localhost:22001",
+        "localhost:22002",
+        "localhost:22003",
+        "localhost:22004"
+    ],
+    "SrvMsgPorts": [
+        "localhost:23000",
+        "localhost:23001",
+        "localhost:23002",
+        "localhost:23003",
+        "localhost:23004"
+    ],
+    "CltMsgPorts": [
+        "localhost:27000",
+        "localhost:27001",
+        "localhost:27002",
+        "localhost:27003",
+        "localhost:27004",
+        "localhost:27005",
+        "localhost:27006",
+        "localhost:27007",
+        "localhost:27008",
+        "localhost:27009"
+    ]
+}

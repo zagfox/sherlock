@@ -10,7 +10,7 @@ type List struct {
 }
 
 type Event struct {
-	Name  string
+	Name     string
 	Lockname string
 	Username string
 }
@@ -24,30 +24,29 @@ type LockStoreIf interface {
 	Release(lu LUpair, succ *bool) error
 
 	/*
-	// Show a lock entry by lname
-	ListEntry(lname string, uname *string) error
+		// Show a lock entry by lname
+		ListEntry(lname string, uname *string) error
 	*/
 
 	// Show the lock acquire queue
 	ListQueue(lname string, cList *List) error
 }
 
-
 // Backend config
 type BackConfig struct {
-    Addr  string      // listen address
-    LockStore LockStoreIf      // the underlying storage it should use
-    Ready chan<- bool // send a value when server is ready
+	Addr      string      // listen address
+	LockStore LockStoreIf // the underlying storage it should use
+	Ready     chan<- bool // send a value when server is ready
 }
 
-// Interface for msg send/recv 
+// Interface for msg send/recv
 type MessageIf interface {
 	Msg(msg string, succ *bool) error
 }
 
 // Config for msg receive server
 type MsgConfig struct {
-	Addr string
+	Addr        string
 	MsgListener MessageIf
-	Ready chan<- bool
+	Ready       chan<- bool
 }
