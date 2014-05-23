@@ -34,7 +34,8 @@ type LockStoreIf interface {
 
 // Backend config
 type BackConfig struct {
-	Addr      string      // listen address
+	Addr	  string      // rpc service address
+	Peers	  []string      // peer server listening address
 	LockStore LockStoreIf // the underlying storage it should use
 	Ready     chan<- bool // send a value when server is ready
 }

@@ -49,11 +49,6 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 	case "r":
 		logError(s.Release(lu, &succ))
 		fmt.Println(succ)
-	/*
-	case "e":
-		logError(s.ListEntry(args[1], &str))
-		fmt.Println(str)
-	*/
 	case "q":
 		logError(s.ListQueue(args[1], &cList))
 		fmt.Println(cList)
@@ -104,9 +99,9 @@ func main() {
 		log.Fatal(e)
 	}
 
-	saddr := rc.SrvPorts[0]
+	saddrs := rc.SrvPorts
 	laddr := rc.CltMsgPorts[cid]
-	c := frontend.NewLockClient(saddr, laddr)
+	c := frontend.NewLockClient(saddrs, laddr)
 
 	runPrompt(c)
 }

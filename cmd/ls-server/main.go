@@ -21,6 +21,7 @@ func runSrv(rc *common.RC, i int) {
 		//ready := make(chan bool)
 		backconfig := common.BackConfig{
 			Addr:      rc.SrvPorts[i],
+			Peers:     rc.SrvMsgPorts,
 			LockStore: s,
 			Ready:     nil,
 		}
@@ -36,11 +37,12 @@ func runSrv(rc *common.RC, i int) {
 
 func main() {
 	// Parse input addr
-	//flag.Parse()
 	rc, _ := common.LoadRC(*frc)
 
+	flag.Parse()
 	args := flag.Args()
 
+	fmt.Println(len(args))
 	if len(args) == 0 {
 		for i, _ := range rc.SrvPorts {
 			go runSrv(rc, i)

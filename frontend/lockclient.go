@@ -4,6 +4,7 @@ package frontend
 
 import (
 	"fmt"
+	"sync"
 	"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
@@ -11,8 +12,10 @@ import (
 
 // struct that used by user
 type lockclient struct {
-	saddr string             //addr of its server
-	clt   common.LockStoreIf //client to call lcok rpc
+	saddrs []string            //addr of its server
+	sid    int		           //id of master server
+	sidLock sync.Mutex          //lock for sid
+	clts   []common.LockStoreIf //client to call lcok rpc
 
 	ch chan string        //chan for listen
 	laddr string			//addr for client listening
@@ -21,11 +24,15 @@ type lockclient struct {
 	acqOk chan string       //Chan to send acquire ok
 }
 
-func NewLockClient(saddr, laddr string) common.LockStoreIf {
-	ch := make(chan string, 1000) //make a channel
-	clt := NewClient(saddr)
+func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
+	ch := make(chan string, 1000)
+	// create clt that connects to all servers
+	clts := make([]common.LockStoreIf, len(saddrs))
+	for i, saddr := range(saddrs) {
+		clts[i] = NewClient(saddr)
+	}
 	acqOk := make(chan string, 1000)
-	lc := lockclient{saddr:saddr, clt:clt, laddr:laddr, ch:ch, acqOk:acqOk}
+	lc := lockclient{saddrs:saddrs, sid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}
 
 	lc.startMsgListener()
 	go lc.startMsgHandler()
@@ -62,11 +69,29 @@ func (self *lockclient) startMsgHandler() {
 	}
 }
 
+// Lock related function
+func (self *lockclient) getSid() int {
+	self.sidLock.Lock()
+	defer self.sidLock.Unlock()
+	return self.sid
+}
+
+func (self *lockclient) setSid(sid int) {
+	self.sidLock.Lock()
+	defer self.sidLock.Unlock()
+	self.sid = sid % len(self.saddrs)
+}
+
+// Acquire and Release
 func (self *lockclient) Acquire(lu common.LUpair, succ *bool) error {
 	lu.Username = self.laddr
-	err := self.clt.Acquire(lu, succ)
-	if err != nil {
-		return err
+	sid := self.getSid()
+	// do rpc call until there is no network error
+	err := self.clts[sid].Acquire(lu, succ)
+	for ; err != nil; self.setSid(sid+1) {
+		//fmt.Println("lockclient network error")
+		sid = self.getSid()
+		err = self.clts[sid].Acquire(lu, succ)
 	}
 
 	if *succ == true {
@@ -81,11 +106,13 @@ func (self *lockclient) Acquire(lu common.LUpair, succ *bool) error {
 
 func (self *lockclient) Release(lu common.LUpair, succ *bool) error {
 	lu.Username = self.laddr
-	return self.clt.Release(lu, succ)
+	sid := self.getSid()
+	return self.clts[sid].Release(lu, succ)
 }
 
 func (self *lockclient) ListQueue(lname string, cList *common.List) error {
-	return self.clt.ListQueue(lname, cList)
+	sid := self.getSid()
+	return self.clts[sid].ListQueue(lname, cList)
 }
 
 var _ common.LockStoreIf = new(lockclient)
