@@ -31,8 +31,7 @@ var (
 )
 
 func runCmd(s common.LockStoreIf, args []string) bool {
-	var succ bool
-	//var str string
+	var reply common.Reply
 	var cList common.List
 
 	if len(args) < 2 {
@@ -44,11 +43,11 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 	lu := common.LUpair{Lockname: args[1], Username: "default"}
 	switch cmd {
 	case "a":
-		logError(s.Acquire(lu, &succ))
-		fmt.Println(succ)
+		logError(s.Acquire(lu, &reply))
+		fmt.Println(reply)
 	case "r":
-		logError(s.Release(lu, &succ))
-		fmt.Println(succ)
+		logError(s.Release(lu, &reply))
+		fmt.Println(reply)
 	case "q":
 		logError(s.ListQueue(args[1], &cList))
 		fmt.Println(cList)

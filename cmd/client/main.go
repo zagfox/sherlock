@@ -24,7 +24,7 @@ const help = `Usage:\n
 	show queue:   q lockname;\n`
 
 func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
-	var succ bool
+	var reply common.Reply
 	//var str string
 	var cList common.List
 
@@ -40,11 +40,11 @@ func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
 		*uname = args[1]
 		fmt.Println(*uname)
 	case "a":
-		logError(s.Acquire(lu, &succ))
-		fmt.Println(succ)
+		logError(s.Acquire(lu, &reply))
+		fmt.Println(reply)
 	case "r":
-		logError(s.Release(lu, &succ))
-		fmt.Println(succ)
+		logError(s.Release(lu, &reply))
+		fmt.Println(reply)
 	/*
 	case "e":
 		logError(s.ListEntry(args[1], &str))

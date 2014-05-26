@@ -7,6 +7,7 @@ import (
 	"container/list"
 	"sync"
 	"encoding/json"
+	"strconv"
 
 	"sherlock/common"
 	"sherlock/message"
@@ -16,20 +17,50 @@ var _ common.LockStoreIf = new(LockStore)
 
 //struct to store lock infomation
 type LockStore struct {
+	// queue storage for lock
 	mqueue map[string]*list.List
 	quLock sync.Mutex
+
+	//self id
+	Id int
+	//master server id
+	mid int
+	midLock sync.Mutex
 }
 
-func NewLockStore() *LockStore {
+func NewLockStore(Id int) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
+		Id:     Id,
 		mqueue: make(map[string]*list.List),
-		//qulock: make(map[string]sync.Mutex),
 	}
 }
 
+// master mid modify interface
+func (self *LockStore) setMasterId(mid int) {
+	self.midLock.Lock()
+	defer self.midLock.Unlock()
+
+	self.mid = mid
+}
+
+func (self *LockStore) getMasterId() int {
+	self.midLock.Lock()
+	defer self.midLock.Unlock()
+
+	return self.mid
+}
+
 // In go rpc, only support for two input args, (args, reply)
-func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
+func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
+	//first check if self is master
+	mid := self.getMasterId()
+	if self.Id != mid {
+		reply.Head = "NotMaster"
+		reply.Body   = strconv.FormatUint(uint64(mid), 10)
+	}
+
+	//then begin operation
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
 
@@ -42,12 +73,12 @@ func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
 	if ok {
 		// what if holder is itself?
 		// Or it request lock before
-		*succ = false
+		reply.Head = "LockQueuing"
 	} else {
 		// if lock entry not found, acquire it
 		que := list.New()
 		self.mqueue[lname] = que
-		*succ = true
+		reply.Head = "LockAcquired"
 	}
 
 	//put in queue
@@ -57,7 +88,7 @@ func (self *LockStore) Acquire(lu common.LUpair, succ *bool) error {
 }
 
 // If queue lenth is 0, delete the queue
-func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
+func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
 
@@ -68,20 +99,20 @@ func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
 	// Check if queue exist
 	q, ok := self.mqueue[lname]
 	if !ok {
-		*succ = false
+		reply.Head = "LockNotFound"
 		return nil
 	}
 
 	// Check if queue has value
 	if q.Len() == 0 {
 		delete(self.mqueue, lname)
-		*succ = false
+		reply.Head = "LockEmptyQueue"
 		return nil
 	}
 
 	//if found it and name is correct, release it
 	if q.Front().Value.(string) == uname {
-		*succ = true
+		reply.Head = "LockReleased"
 		q.Remove(q.Front())
 		if q.Len() == 0 {
 			delete(self.mqueue, lname)
@@ -90,7 +121,7 @@ func (self *LockStore) Release(lu common.LUpair, succ *bool) error {
 			self.updateRelease(lu.Lockname)
 		}
 	} else {
-		*succ = false
+		reply.Head = "LockNotOwn"
 	}
 	return nil
 }

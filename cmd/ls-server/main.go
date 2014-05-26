@@ -17,7 +17,7 @@ var (
 
 func runSrv(rc *common.RC, i int) {
 		// Create backconfig
-		s := lockstore.NewLockStore()
+		s := lockstore.NewLockStore(i)
 		//ready := make(chan bool)
 		backconfig := common.BackConfig{
 			Addr:      rc.SrvPorts[i],

@@ -24,15 +24,15 @@ func TestLockStore(t *testing.T) {
 		}
 	}
 
-	s := lockstore.NewLockStore()
+	s := lockstore.NewLockStore(0)
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
-	var succ bool
+	var reply common.Reply
 	var cList common.List
 
 	//basic test for one user
-	ne(s.Acquire(lu1, &succ))
-	as(succ == true)
+	ne(s.Acquire(lu1, &reply))
+	as(reply.Head == "LockAcquired")
 
 	/*
 	// Deadlock, don't know what to do
@@ -40,18 +40,18 @@ func TestLockStore(t *testing.T) {
 	as(succ == false)
 	*/
 
-	ne(s.Release(lu1, &succ))
-	as(succ == true)
+	ne(s.Release(lu1, &reply))
+	as(reply.Head == "LockReleased")
 
-	ne(s.Release(lu1, &succ))
-	as(succ == false)
+	ne(s.Release(lu1, &reply))
+	as(reply.Head == "LockNotFound")
 
 	//test for two user
 	lu1 = common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 = common.LUpair{Lockname: "l1", Username: "bob"}
-	ne(s.Acquire(lu1, &succ))
-	ne(s.Acquire(lu2, &succ))
-	as(succ == false)
+	ne(s.Acquire(lu1, &reply))
+	ne(s.Acquire(lu2, &reply))
+	//as(succ == false)
 
 	//test for queue
 	ne(s.ListQueue("l1", &cList))

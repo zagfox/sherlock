@@ -9,19 +9,26 @@ type List struct {
 	L []string
 }
 
+// type for event that server sends to client
 type Event struct {
 	Name     string
 	Lockname string
 	Username string
 }
 
+// type for reply that every rpc call returns
+type Reply struct {
+	Head   string
+	Body   string
+}
+
 // Interface to call a lock operation
 type LockStoreIf interface {
 	// Acquire a lock, input should be {lname, unmae}
-	Acquire(lu LUpair, succ *bool) error
+	Acquire(lu LUpair, reply *Reply) error
 
 	// Release a lock, input should be {lname, unmae}
-	Release(lu LUpair, succ *bool) error
+	Release(lu LUpair, reply *Reply) error
 
 	/*
 		// Show a lock entry by lname

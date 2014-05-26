@@ -83,31 +83,52 @@ func (self *lockclient) setSid(sid int) {
 }
 
 // Acquire and Release
-func (self *lockclient) Acquire(lu common.LUpair, succ *bool) error {
+func (self *lockclient) Acquire(lu common.LUpair, reply *common.Reply) error {
+	//set lu username
 	lu.Username = self.laddr
+
+	// find a machine that could be connected 
 	sid := self.getSid()
-	// do rpc call until there is no network error
-	err := self.clts[sid].Acquire(lu, succ)
+	err := self.clts[sid].Acquire(lu, reply)
 	for ; err != nil; self.setSid(sid+1) {
-		//fmt.Println("lockclient network error")
 		sid = self.getSid()
-		err = self.clts[sid].Acquire(lu, succ)
+		err = self.clts[sid].Acquire(lu, reply)
+		if err == nil {break}
 	}
 
-	if *succ == true {
-		return nil
-	}
+	// handle reply Head
+	switch reply.Head {
+	// acquire success
+	case "LockAcquired":
 
 	//block and wait for set free
-	<-self.acqOk
-	*succ = true
+	case "LockQueuing":
+		<-self.acqOk
+		reply.Head = "LockAcquiredByEvent"
+	default:
+	}
 	return nil
 }
 
-func (self *lockclient) Release(lu common.LUpair, succ *bool) error {
+func (self *lockclient) Release(lu common.LUpair, reply *common.Reply) error {
+	//set lu username
 	lu.Username = self.laddr
+
+	// find a machine that could be connected 
 	sid := self.getSid()
-	return self.clts[sid].Release(lu, succ)
+	err := self.clts[sid].Release(lu, reply)
+	for ; err != nil; self.setSid(sid+1) {
+		sid = self.getSid()
+		err = self.clts[sid].Release(lu, reply)
+		if err == nil {break}
+	}
+
+	// handle reply Head
+	switch reply.Head {
+	default:
+	}
+
+	return nil
 }
 
 func (self *lockclient) ListQueue(lname string, cList *common.List) error {

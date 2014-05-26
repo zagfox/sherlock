@@ -38,13 +38,13 @@ func (self *client) connect(firsttime bool) error {
 	return err
 }
 
-func (self *client) Acquire(lu common.LUpair, succ *bool) error {
+func (self *client) Acquire(lu common.LUpair, reply *common.Reply) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.Acquire", lu, succ)
-	for ; e != nil; e = self.srv.Call("LockStore.Acquire", lu, succ) {
+	e := self.srv.Call("LockStore.Acquire", lu, reply)
+	for ; e != nil; e = self.srv.Call("LockStore.Acquire", lu, reply) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
@@ -53,13 +53,13 @@ func (self *client) Acquire(lu common.LUpair, succ *bool) error {
 	return nil
 }
 
-func (self *client) Release(lu common.LUpair, succ *bool) error {
+func (self *client) Release(lu common.LUpair, reply *common.Reply) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.Release", lu, succ)
-	for ; e != nil; e = self.srv.Call("LockStore.Release", lu, succ) {
+	e := self.srv.Call("LockStore.Release", lu, reply)
+	for ; e != nil; e = self.srv.Call("LockStore.Release", lu, reply) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
