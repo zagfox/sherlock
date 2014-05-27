@@ -162,7 +162,7 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 
 func (self *LockStore) appendQueue(qname, item string) bool {
 	//TODO: use 2PC
-	msg := common.Content{"come on", ""}
+	msg := common.Content{"come on", "msg from lockstore"}
 	var reply common.Content
 
 	srv := self.srvs[2]

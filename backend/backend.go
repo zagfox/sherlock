@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"time"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -75,7 +76,6 @@ func (self *lockserver) startLockService() {
 
 	// Start service, this is blocking
 	http.Serve(l, rpcServer)
-
 }
 
 // start msg listener
@@ -111,4 +111,13 @@ func (self *lockserver) startMsgHandler() {
 
 // Thread that reply log
 func (self *lockserver) startLogPlayer() {
+	for {
+		/*msg := common.Content{"come on", "msg from log player"}
+		var reply common.Content
+
+		srv := self.bc.Srvs[3]
+	    srv.Msg(msg, &reply)
+		*/
+		time.Sleep(time.Second)
+	}
 }
