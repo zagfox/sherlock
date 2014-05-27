@@ -25,29 +25,39 @@ type lockclient struct {
 }
 
 func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
-	ch := make(chan string, 1000)
 	// create clt that connects to all servers
 	clts := make([]common.LockStoreIf, len(saddrs))
 	for i, saddr := range(saddrs) {
 		clts[i] = NewClient(saddr)
 	}
+
+	// channel for listening all message
+	ch := make(chan string, 1000)
+
+	// acqOK channel, waiting for event of lock release
 	acqOk := make(chan string, 1000)
+
+	// Create lockclient
 	lc := lockclient{saddrs:saddrs, sid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}
 
+	//Start msg listener and handler
 	lc.startMsgListener()
 	go lc.startMsgHandler()
+
 	return &lc
 }
 
-// Start msg listener, it is an rpc server
 func (self *lockclient) startMsgListener() {
+	// Start msg listener, it is an rpc server
 	msglistener := message.NewMsgListener(self.ch)
+
 	msgconfig := common.MsgConfig{
 		Addr:        self.laddr,
 		MsgListener: msglistener,
 		Ready:       nil,
 	}
 	fmt.Println("start msg listener", self.laddr)
+
 	//no error handling here
 	go message.ServeBack(&msgconfig)
 }
@@ -62,6 +72,7 @@ func (self *lockclient) startMsgHandler() {
 		//unmarshall it and handle it
 		var event common.Event
 		json.Unmarshal([]byte(bytes), &event)
+
 		// if event is acqSucc and parameter correct
 		if event.Name == "acqOk" && event.Username == self.laddr {
 			self.acqOk<- bytes

@@ -33,5 +33,10 @@ func ServeBack(b *common.BackConfig) error {
 		b.Ready <- true
 	}
 	// Start service, this is blocking
-	return http.Serve(l, rpcServer)
+	go http.Serve(l, rpcServer)
+
+	//TODO:Start a thread to handle messages
+
+	select {}
 }
+

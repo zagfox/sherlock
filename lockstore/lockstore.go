@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	//"fmt"
+	"fmt"
 	//"errors"
 	"container/list"
 	"sync"
@@ -21,10 +21,11 @@ type LockStore struct {
 	mqueue map[string]*list.List
 	quLock sync.Mutex
 
-	//self id
-	Id int
-	//master server id
-	mid int
+	//data store for log and lock map queue
+	ds     *DataStore
+
+	Id     int    //self id
+	mid    int   //master server id
 	midLock sync.Mutex
 }
 
@@ -33,6 +34,7 @@ func NewLockStore(Id int) *LockStore {
 	return &LockStore{
 		Id:     Id,
 		mqueue: make(map[string]*list.List),
+		ds:     NewDataStore(),
 	}
 }
 
@@ -58,6 +60,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
 	if self.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body   = strconv.FormatUint(uint64(mid), 10)
+		return nil
 	}
 
 	//then begin operation
@@ -65,30 +68,35 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
 	defer self.quLock.Unlock()
 
 	lname := lu.Lockname
-	//uname := lu.Username
+	uname := lu.Username
 
-	// TODO, basic semantic
 	// Implement func
-	_, ok := self.mqueue[lname]
+	_, ok := self.ds.GetQueue(lname)
 	if ok {
-		// what if holder is itself?
-		// Or it request lock before
+		// no deadlock checking, just queuing
 		reply.Head = "LockQueuing"
 	} else {
 		// if lock entry not found, acquire it
-		que := list.New()
-		self.mqueue[lname] = que
 		reply.Head = "LockAcquired"
 	}
 
 	//put in queue
-	self.appendQueue(lu)
+	fmt.Println("appendqueue")
+	self.ds.AppendQueue(lname, uname)
 
 	return nil
 }
 
 // If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
+	//first check if self is master
+	mid := self.getMasterId()
+	if self.Id != mid {
+		reply.Head = "NotMaster"
+		reply.Body   = strconv.FormatUint(uint64(mid), 10)
+		return nil
+	}
+
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
 
@@ -97,7 +105,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
 	uname := lu.Username
 
 	// Check if queue exist
-	q, ok := self.mqueue[lname]
+	q, ok := self.ds.GetQueue(lname)
 	if !ok {
 		reply.Head = "LockNotFound"
 		return nil
@@ -105,21 +113,19 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
 
 	// Check if queue has value
 	if q.Len() == 0 {
-		delete(self.mqueue, lname)
 		reply.Head = "LockEmptyQueue"
 		return nil
 	}
 
 	//if found it and name is correct, release it
+	fmt.Println(q.Front().Value.(string))
 	if q.Front().Value.(string) == uname {
+		//TODO, use two pc
 		reply.Head = "LockReleased"
-		q.Remove(q.Front())
-		if q.Len() == 0 {
-			delete(self.mqueue, lname)
-		} else {
-			// Notify other user
-			self.updateRelease(lu.Lockname)
-		}
+		self.ds.PopQueue(lname)
+
+		// Notify other user
+		self.updateRelease(lu.Lockname)
 	} else {
 		reply.Head = "LockNotOwn"
 	}
@@ -131,16 +137,15 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	defer self.quLock.Unlock()
 
 	if cList == nil {
-		//return errors.New("cList is nil")
 		return nil
 	}
 	cList.L = make([]string, 0)
 
-	q, ok := self.mqueue[lname]
+	q, ok := self.ds.GetQueue(lname)
 	if !ok {
-		//return errors.New("queue not found")
 		return nil
 	}
+
 	for v := q.Front(); v != nil; v = v.Next() {
 		cList.L = append(cList.L, v.Value.(string))
 	}
@@ -149,24 +154,26 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 
 func (self *LockStore) updateRelease(lname string) error {
 	// if anyone waiting, find it and send Event
-	q, ok := self.mqueue[lname]
+	q, ok := self.ds.GetQueue(lname)
 	if !ok {
 		return nil
 	}
 	if q.Len() == 0 {
 		return nil
 	}
+
 	uname := q.Front().Value.(string)
 
 	var succ bool
 	sender := message.NewMsgClient(uname)
 	bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
-	//fmt.Println("notify")
+
 	sender.Msg(string(bytes), &succ)
 
 	return nil
 }
 
+/*
 // Append a "Acquire" request to queue
 //No lock here cause the caller should have lock
 func (self *LockStore) appendQueue(lu common.LUpair) error {
@@ -194,3 +201,4 @@ func (self *LockStore) appendQueue(lu common.LUpair) error {
 
 	return nil
 }
+*/
