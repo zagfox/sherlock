@@ -15,12 +15,13 @@ type lockclient struct {
 	saddrs []string            //addr of its server
 	sid    int		           //id of master server
 	sidLock sync.Mutex          //lock for sid
-	clts   []common.LockStoreIf //client to call lcok rpc
+	clts   []common.LockStoreIf //client to call lock rpc
 
 	ch chan common.Content      //chan for listen
 	laddr string			//addr for client listening
 	lpid int                //pid for listen thread
 
+	//TODO, give channel to every lock
 	acqOk chan string       //Chan to send acquire ok
 }
 

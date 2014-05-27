@@ -47,18 +47,26 @@ type LockStoreIf interface {
 
 // Interface to a data storage
 type DataStoreIf interface {
+	// get the whole queue
 	GetQueue(qname string) (*list.List, bool)
-	AppendQueue(qname, content string) bool
+
+	// append item to queue end
+	AppendQueue(qname, item string) bool
+
+	// pop queue's first item
 	PopQueue(qname string) (string, bool)
 }
 
 // Backend config
 type BackConfig struct {
-	Addr	  string      // rpc service address
+	Addr	  string        // rpc service address
+	Laddr     string        // server listen address
 	Peers	  []string      // peer server listening address
-	DataStore DataStoreIf
-	LockStore LockStoreIf // the underlying storage it should use
-	Ready     chan<- bool // send a value when server is ready
+	DataStore DataStoreIf   // underlying data store with lock map and log
+	LockStore LockStoreIf   // the underlying storage it should use
+	Srvs      []MessageIf   // method to talk to other servers
+	ChCtnt    chan Content  // channel for passing from msg listener to handler
+	Ready     chan<- bool   // send a value when server is ready
 }
 
 // Interface for msg send/recv

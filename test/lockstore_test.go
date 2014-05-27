@@ -25,7 +25,7 @@ func TestLockStore(t *testing.T) {
 	}
 
 	ds := lockstore.NewDataStore()
-	s := lockstore.NewLockStore(0, ds)
+	s := lockstore.NewLockStore(0, ds, nil)
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content

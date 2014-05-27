@@ -2,7 +2,8 @@
 package lockstore
 
 import (
-	"fmt"
+	//"fmt"
+	"sync"
 	"container/list"
 	"sherlock/common"
 )
@@ -10,7 +11,9 @@ import (
 var _ common.DataStoreIf = new(DataStore)
 
 type DataStore struct {
+	lock   sync.Mutex
 	mqueue map[string]*list.List
+	//TODO change to single list
 	mlog   map[string]*list.List
 }
 
@@ -22,12 +25,18 @@ func NewDataStore() *DataStore {
 }
 
 func (self *DataStore) GetQueue(qname string) (*list.List, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	//todo, use log
 	q, ok := self.mqueue[qname]
 	return q, ok
 }
 
-func (self *DataStore) AppendQueue(qname, content string) bool {
+func (self *DataStore) AppendQueue(qname, item string) bool {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	//todo, use log
 	q, ok := self.mqueue[qname]
 	if !ok {
@@ -40,34 +49,35 @@ func (self *DataStore) AppendQueue(qname, content string) bool {
 	// check if exist
 	exist := false
 	for v := q.Front(); v != nil; v = v.Next() {
-		if content == v.Value.(string) {
+		if item == v.Value.(string) {
 			exist = true
 		}
 	}
-	fmt.Println("get queue")
 
 	//append it
 	if !exist {
-		q.PushBack(content)
+		q.PushBack(item)
 	}
-	fmt.Println("get queue")
 
 	return true
 }
 
 func (self *DataStore) PopQueue(qname string) (string, bool) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	//todo, use log
 	q, ok := self.mqueue[qname]
 	if !ok || q.Len() == 0 {
 		return "", false
 	}
 
-	content := q.Front().Value.(string)
+	item:= q.Front().Value.(string)
 	q.Remove(q.Front())
 	if q.Len() == 0 {
 		delete(self.mqueue, qname)
 	}
-	return content, true
+	return item, true
 }
 
 

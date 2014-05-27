@@ -23,18 +23,20 @@ type LockStore struct {
 
 	//data store for log and lock map queue
 	ds     *DataStore
+	srvs   []common.MessageIf
 
 	Id     int    //self id
 	mid    int   //master server id
 	midLock sync.Mutex
 }
 
-func NewLockStore(Id int, ds *DataStore) *LockStore {
+func NewLockStore(Id int, ds *DataStore, srvs []common.MessageIf) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
 		Id:     Id,
 		//mqueue: make(map[string]*list.List),
 		ds:     ds, //NewDataStore(),
+		srvs:   srvs,
 	}
 }
 
@@ -83,7 +85,6 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	}
 
 	//put in queue
-	fmt.Println("appendqueue")
 	self.appendQueue(lname, uname)
 
 	return nil
@@ -159,9 +160,15 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 	return self.ds.GetQueue(lname)
 }
 
-func (self *LockStore) appendQueue(qname, content string) bool {
+func (self *LockStore) appendQueue(qname, item string) bool {
 	//TODO: use 2PC
-	return self.ds.AppendQueue(qname, content)
+	msg := common.Content{"come on", ""}
+	var reply common.Content
+
+	srv := self.srvs[2]
+	srv.Msg(msg, &reply)
+
+	return self.ds.AppendQueue(qname, item)
 }
 
 func (self *LockStore) popQueue(qname string) (string, bool) {
