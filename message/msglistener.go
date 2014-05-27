@@ -10,15 +10,15 @@ import (
 var _ common.MessageIf = new(MsgListener)
 
 type MsgListener struct {
-	ch chan string
+	ch chan common.Content
 }
 
-func NewMsgListener(ch chan string) *MsgListener {
+func NewMsgListener(ch chan common.Content) *MsgListener {
 	return &MsgListener{ch: ch}
 }
 
-func (self *MsgListener) Msg(msg string, succ *bool) error {
+func (self *MsgListener) Msg(msg common.Content, reply *common.Content) error {
 	self.ch<- msg
-	*succ = true
+	reply.Head = "success"
 	return nil
 }

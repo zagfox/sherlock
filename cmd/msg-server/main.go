@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	// Create backconfig
-	ch := make(chan string, 1)
+	ch := make(chan common.Content, 1)
 	l := message.NewMsgListener(ch)
 	//ready := make(chan bool)
 	msgconfig := common.MsgConfig{

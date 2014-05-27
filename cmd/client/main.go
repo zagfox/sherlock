@@ -24,7 +24,7 @@ const help = `Usage:\n
 	show queue:   q lockname;\n`
 
 func runCmd(uname *string, s common.LockStoreIf, args []string) bool {
-	var reply common.Reply
+	var reply common.Content
 	//var str string
 	var cList common.List
 

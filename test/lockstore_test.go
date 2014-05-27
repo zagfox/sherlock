@@ -24,10 +24,11 @@ func TestLockStore(t *testing.T) {
 		}
 	}
 
-	s := lockstore.NewLockStore(0)
+	ds := lockstore.NewDataStore()
+	s := lockstore.NewLockStore(0, ds)
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
-	var reply common.Reply
+	var reply common.Content
 	var cList common.List
 
 	//basic test for one user

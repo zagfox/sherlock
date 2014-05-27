@@ -36,13 +36,13 @@ func (self *MsgClient) connect(firsttime bool) error {
 	return err
 }
 
-func (self *MsgClient) Msg(msg string, succ *bool) error {
+func (self *MsgClient) Msg(msg common.Content, reply *common.Content) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
 
-	e := self.srv.Call("MsgListener.Msg", msg, succ)
-	for ; e != nil; e = self.srv.Call("MsgListener.Msg", msg, succ) {
+	e := self.srv.Call("MsgListener.Msg", msg, reply)
+	for ; e != nil; e = self.srv.Call("MsgListener.Msg", msg, reply) {
 		if e = self.connect(false); e != nil {
 			return e
 		}

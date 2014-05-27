@@ -38,7 +38,7 @@ func (self *client) connect(firsttime bool) error {
 	return err
 }
 
-func (self *client) Acquire(lu common.LUpair, reply *common.Reply) error {
+func (self *client) Acquire(lu common.LUpair, reply *common.Content) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}
@@ -53,7 +53,7 @@ func (self *client) Acquire(lu common.LUpair, reply *common.Reply) error {
 	return nil
 }
 
-func (self *client) Release(lu common.LUpair, reply *common.Reply) error {
+func (self *client) Release(lu common.LUpair, reply *common.Content) error {
 	if e := self.connect(true); e != nil {
 		return e
 	}

@@ -31,7 +31,7 @@ var (
 )
 
 func runCmd(s common.LockStoreIf, args []string) bool {
-	var reply common.Reply
+	var reply common.Content
 	var cList common.List
 
 	if len(args) < 2 {

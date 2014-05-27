@@ -17,12 +17,14 @@ var (
 
 func runSrv(rc *common.RC, i int) {
 		// Create backconfig
-		s := lockstore.NewLockStore(i)
+		ds := lockstore.NewDataStore()
+		ls := lockstore.NewLockStore(i, ds)
 		//ready := make(chan bool)
 		backconfig := common.BackConfig{
 			Addr:      rc.SrvPorts[i],
 			Peers:     rc.SrvMsgPorts,
-			LockStore: s,
+			DataStore: ds,
+			LockStore: ls,
 			Ready:     nil,
 		}
 

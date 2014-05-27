@@ -17,7 +17,7 @@ type lockclient struct {
 	sidLock sync.Mutex          //lock for sid
 	clts   []common.LockStoreIf //client to call lcok rpc
 
-	ch chan string        //chan for listen
+	ch chan common.Content      //chan for listen
 	laddr string			//addr for client listening
 	lpid int                //pid for listen thread
 
@@ -32,7 +32,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	}
 
 	// channel for listening all message
-	ch := make(chan string, 1000)
+	ch := make(chan common.Content, 1000)
 
 	// acqOK channel, waiting for event of lock release
 	acqOk := make(chan string, 1000)
@@ -66,9 +66,19 @@ func (self *lockclient) startMsgListener() {
 func (self *lockclient) startMsgHandler() {
 	for {
 		// Read event string from channel
-		bytes := <-self.ch
-		fmt.Println(bytes)
+		ctnt := <-self.ch
+		fmt.Println(ctnt)
 
+		// Examine the content
+		switch ctnt.Head {
+		case "acqOk":
+			var lu common.LUpair
+			json.Unmarshal([]byte(ctnt.Body), &lu)
+			if lu.Username == self.laddr {
+				self.acqOk<- "true"
+			}
+		}
+		/*
 		//unmarshall it and handle it
 		var event common.Event
 		json.Unmarshal([]byte(bytes), &event)
@@ -77,6 +87,7 @@ func (self *lockclient) startMsgHandler() {
 		if event.Name == "acqOk" && event.Username == self.laddr {
 			self.acqOk<- bytes
 		}
+		*/
 	}
 }
 
@@ -94,7 +105,7 @@ func (self *lockclient) setSid(sid int) {
 }
 
 // Acquire and Release
-func (self *lockclient) Acquire(lu common.LUpair, reply *common.Reply) error {
+func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	//set lu username
 	lu.Username = self.laddr
 
@@ -121,7 +132,7 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Reply) error {
 	return nil
 }
 
-func (self *lockclient) Release(lu common.LUpair, reply *common.Reply) error {
+func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 	//set lu username
 	lu.Username = self.laddr
 

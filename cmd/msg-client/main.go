@@ -18,27 +18,29 @@ func logError(e error) {
 }
 
 const help = `Usage:\n
-	send msg: m lockname;\n`
+	send msg: m Head Body;\n`
 
 func runCmd(s common.MessageIf, args []string) bool {
-	var succ bool
+	var reply common.Content
 
 	if len(args)==1 && args[0]== "help" {
 		fmt.Println(help)
 		return true
 	}
 
-	if len(args) < 2 {
+	if len(args) < 3 {
 		fmt.Println("bad command, try \"help\".")
 		return false
 	}
 
 	cmd := args[0]
-	msg := args[1]
+	ctnt := common.Content{args[1], args[2]}
+	//h := args[1]
+	//b := args[2]
 	switch cmd {
 	case "m":
-		logError(s.Msg(msg, &succ))
-		fmt.Println(succ)
+		logError(s.Msg(ctnt, &reply))
+		fmt.Println(reply)
 	default:
 		logError(fmt.Errorf("bad command, try \"help\"."))
 	}

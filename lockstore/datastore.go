@@ -4,7 +4,11 @@ package lockstore
 import (
 	"fmt"
 	"container/list"
+	"sherlock/common"
 )
+
+var _ common.DataStoreIf = new(DataStore)
+
 type DataStore struct {
 	mqueue map[string]*list.List
 	mlog   map[string]*list.List
@@ -18,11 +22,13 @@ func NewDataStore() *DataStore {
 }
 
 func (self *DataStore) GetQueue(qname string) (*list.List, bool) {
+	//todo, use log
 	q, ok := self.mqueue[qname]
 	return q, ok
 }
 
-func (self *DataStore) AppendQueue(qname, content string) error {
+func (self *DataStore) AppendQueue(qname, content string) bool {
+	//todo, use log
 	q, ok := self.mqueue[qname]
 	if !ok {
 		que := list.New()
@@ -46,10 +52,11 @@ func (self *DataStore) AppendQueue(qname, content string) error {
 	}
 	fmt.Println("get queue")
 
-	return nil
+	return true
 }
 
 func (self *DataStore) PopQueue(qname string) (string, bool) {
+	//todo, use log
 	q, ok := self.mqueue[qname]
 	if !ok || q.Len() == 0 {
 		return "", false
@@ -62,7 +69,5 @@ func (self *DataStore) PopQueue(qname string) (string, bool) {
 	}
 	return content, true
 }
-
-
 
 

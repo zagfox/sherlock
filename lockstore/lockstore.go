@@ -18,7 +18,7 @@ var _ common.LockStoreIf = new(LockStore)
 //struct to store lock infomation
 type LockStore struct {
 	// queue storage for lock
-	mqueue map[string]*list.List
+	//mqueue map[string]*list.List
 	quLock sync.Mutex
 
 	//data store for log and lock map queue
@@ -29,14 +29,16 @@ type LockStore struct {
 	midLock sync.Mutex
 }
 
-func NewLockStore(Id int) *LockStore {
+func NewLockStore(Id int, ds *DataStore) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
 		Id:     Id,
-		mqueue: make(map[string]*list.List),
-		ds:     NewDataStore(),
+		//mqueue: make(map[string]*list.List),
+		ds:     ds, //NewDataStore(),
 	}
 }
+
+// Get Data Storage
 
 // master mid modify interface
 func (self *LockStore) setMasterId(mid int) {
@@ -54,7 +56,7 @@ func (self *LockStore) getMasterId() int {
 }
 
 // In go rpc, only support for two input args, (args, reply)
-func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
+func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	//first check if self is master
 	mid := self.getMasterId()
 	if self.Id != mid {
@@ -71,7 +73,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
 	uname := lu.Username
 
 	// Implement func
-	_, ok := self.ds.GetQueue(lname)
+	_, ok := self.getQueue(lname)
 	if ok {
 		// no deadlock checking, just queuing
 		reply.Head = "LockQueuing"
@@ -82,13 +84,13 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Reply) error {
 
 	//put in queue
 	fmt.Println("appendqueue")
-	self.ds.AppendQueue(lname, uname)
+	self.appendQueue(lname, uname)
 
 	return nil
 }
 
 // If queue lenth is 0, delete the queue
-func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
+func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	//first check if self is master
 	mid := self.getMasterId()
 	if self.Id != mid {
@@ -105,7 +107,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
 	uname := lu.Username
 
 	// Check if queue exist
-	q, ok := self.ds.GetQueue(lname)
+	q, ok := self.getQueue(lname)
 	if !ok {
 		reply.Head = "LockNotFound"
 		return nil
@@ -122,7 +124,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Reply) error {
 	if q.Front().Value.(string) == uname {
 		//TODO, use two pc
 		reply.Head = "LockReleased"
-		self.ds.PopQueue(lname)
+		self.popQueue(lname)
 
 		// Notify other user
 		self.updateRelease(lu.Lockname)
@@ -141,7 +143,7 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	}
 	cList.L = make([]string, 0)
 
-	q, ok := self.ds.GetQueue(lname)
+	q, ok := self.getQueue(lname)
 	if !ok {
 		return nil
 	}
@@ -152,9 +154,24 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	return nil
 }
 
+// private function own by LockStore
+func (self *LockStore) getQueue(lname string) (*list.List, bool) {
+	return self.ds.GetQueue(lname)
+}
+
+func (self *LockStore) appendQueue(qname, content string) bool {
+	//TODO: use 2PC
+	return self.ds.AppendQueue(qname, content)
+}
+
+func (self *LockStore) popQueue(qname string) (string, bool) {
+	//TODO: use 2PC
+	return self.ds.PopQueue(qname)
+}
+
 func (self *LockStore) updateRelease(lname string) error {
 	// if anyone waiting, find it and send Event
-	q, ok := self.ds.GetQueue(lname)
+	q, ok := self.getQueue(lname)
 	if !ok {
 		return nil
 	}
@@ -164,41 +181,17 @@ func (self *LockStore) updateRelease(lname string) error {
 
 	uname := q.Front().Value.(string)
 
-	var succ bool
+	// Send out message
+	var reply common.Content
 	sender := message.NewMsgClient(uname)
-	bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
+	//bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
+	bytes, _ := json.Marshal(common.LUpair{lname, uname})
 
-	sender.Msg(string(bytes), &succ)
-
-	return nil
-}
-
-/*
-// Append a "Acquire" request to queue
-//No lock here cause the caller should have lock
-func (self *LockStore) appendQueue(lu common.LUpair) error {
-	//fmt.Println("append queue")
-
-	q, ok := self.mqueue[lu.Lockname]
-	if !ok {
-		//return errors.New("queue not found")
-		return nil
-	}
-
-	// Eliminate duplicate here
-	// check if exist
-	exist := false
-	for v := q.Front(); v != nil; v = v.Next() {
-		if lu.Username == v.Value.(string) {
-			exist = true
-		}
-	}
-
-	//append it
-	if !exist {
-		q.PushBack(lu.Username)
-	}
+	var ctnt common.Content
+	ctnt.Head = "acqOk"
+	ctnt.Body = string(bytes)
+	sender.Msg(ctnt, &reply)
 
 	return nil
 }
-*/
+
