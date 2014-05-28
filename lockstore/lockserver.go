@@ -126,24 +126,6 @@ func (self *lockserver) Start() {
 	select {}
 }
 
-/*func ServeBack(b *common.BackConfig) error {
-	// Start lock service rpc
-	go startLockService(b)
-
-	// Start a thread to listen and handle messages
-	go startMsgListener(b)
-	go startMsgHandler(b)
-
-	// Start a thread to reply log
-	go startLogPlayer(b)
-
-	if b.Ready != nil {
-		b.Ready <- true
-	}
-
-	select {}
-}*/
-
 func (self *lockserver) startLockService() {
 	b := self.bc
 	// listen to address

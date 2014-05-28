@@ -16,61 +16,24 @@ var _ common.LockStoreIf = new(LockStore)
 
 //struct to store lock infomation
 type LockStore struct {
-	// queue storage for lock
-	//mqueue map[string]*list.List
-	quLock sync.Mutex
-
 	//data store for log and lock map queue
 	ds     *DataStore
-	srvs   []common.MessageIf
 
-	/*Id     int    //self id
-	mid    int   //master server id
-	midLock sync.Mutex*/
+	// entry to talk to other servers
+	srvs   []common.MessageIf
 }
 
 func NewLockStore(Id int, ds *DataStore, srvs []common.MessageIf) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
-		//Id:     Id,
-		//mqueue: make(map[string]*list.List),
 		ds:     ds, //NewDataStore(),
 		srvs:   srvs,
 	}
 }
 
-// Get Data Storage
-
-/*
-// master mid modify interface
-func (self *LockStore) setMasterId(mid int) {
-	self.midLock.Lock()
-	defer self.midLock.Unlock()
-
-	self.mid = mid
-}
-
-func (self *LockStore) getMasterId() int {
-	self.midLock.Lock()
-	defer self.midLock.Unlock()
-
-	return self.mid
-}*/
-
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
-/*	//first check if self is master
-	mid := self.getMasterId()
-	if self.Id != mid {
-		reply.Head = "NotMaster"
-		reply.Body   = strconv.FormatUint(uint64(mid), 10)
-		return nil
-	}*/
-
-	//then begin operation
-	self.quLock.Lock()
-	defer self.quLock.Unlock()
-
+	// begin operation
 	lname := lu.Lockname
 	uname := lu.Username
 
@@ -92,19 +55,6 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 
 // If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
-/*
-	//first check if self is master
-	mid := self.getMasterId()
-	if self.Id != mid {
-		reply.Head = "NotMaster"
-		reply.Body   = strconv.FormatUint(uint64(mid), 10)
-		return nil
-	}
-	*/
-
-	self.quLock.Lock()
-	defer self.quLock.Unlock()
-
 	// Check args number
 	lname := lu.Lockname
 	uname := lu.Username
@@ -138,9 +88,6 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 }
 
 func (self *LockStore) ListQueue(lname string, cList *common.List) error {
-	self.quLock.Lock()
-	defer self.quLock.Unlock()
-
 	if cList == nil {
 		return nil
 	}
@@ -164,7 +111,9 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 
 func (self *LockStore) appendQueue(qname, item string) bool {
 	//TODO: use 2PC
-	/*msg := common.Content{"come on", "msg from lockstore"}
+	/*
+	// check if msg is functioning
+	msg := common.Content{"come on", "msg from lockstore"}
 	var reply common.Content
 
 	fmt.Println("in lstore", len(self.srvs))
@@ -195,7 +144,6 @@ func (self *LockStore) updateRelease(lname string) error {
 	// Send out message
 	var reply common.Content
 	sender := message.NewMsgClient(uname)
-	//bytes, _ := json.Marshal(common.Event{"acqOk", lname, uname})
 	bytes, _ := json.Marshal(common.LUpair{lname, uname})
 
 	var ctnt common.Content

@@ -13,15 +13,6 @@ type List struct {
 	L []string
 }
 
-/*
-// type for event that server sends to client
-type Event struct {
-	Name     string
-	Lockname string
-	Username string
-}
-*/
-
 // type for Content that every rpc call returns
 type Content struct {
 	Head   string
@@ -35,11 +26,6 @@ type LockStoreIf interface {
 
 	// Release a lock, input should be {lname, unmae}
 	Release(lu LUpair, reply *Content) error
-
-	/*
-		// Show a lock entry by lname
-		ListEntry(lname string, uname *string) error
-	*/
 
 	// Show the lock acquire queue
 	ListQueue(lname string, cList *List) error
@@ -63,10 +49,6 @@ type BackConfig struct {
 	Addr	  string        // rpc service address
 	Laddr     string        // server listen address
 	Peers	  []string      // peer server listening address
-	//DataStore DataStoreIf   // underlying data store with lock map and log
-	//LockStore LockStoreIf   // the underlying storage it should use
-	//Srvs      []MessageIf   // method to talk to other servers
-	//ChCtnt    chan Content  // channel for passing from msg listener to handler
 	Ready     chan<- bool   // send a value when server is ready
 }
 
