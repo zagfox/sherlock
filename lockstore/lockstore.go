@@ -7,7 +7,6 @@ import (
 	"container/list"
 	"sync"
 	"encoding/json"
-	"strconv"
 
 	"sherlock/common"
 	"sherlock/message"
@@ -25,15 +24,15 @@ type LockStore struct {
 	ds     *DataStore
 	srvs   []common.MessageIf
 
-	Id     int    //self id
+	/*Id     int    //self id
 	mid    int   //master server id
-	midLock sync.Mutex
+	midLock sync.Mutex*/
 }
 
 func NewLockStore(Id int, ds *DataStore, srvs []common.MessageIf) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
-		Id:     Id,
+		//Id:     Id,
 		//mqueue: make(map[string]*list.List),
 		ds:     ds, //NewDataStore(),
 		srvs:   srvs,
@@ -42,6 +41,7 @@ func NewLockStore(Id int, ds *DataStore, srvs []common.MessageIf) *LockStore {
 
 // Get Data Storage
 
+/*
 // master mid modify interface
 func (self *LockStore) setMasterId(mid int) {
 	self.midLock.Lock()
@@ -55,17 +55,17 @@ func (self *LockStore) getMasterId() int {
 	defer self.midLock.Unlock()
 
 	return self.mid
-}
+}*/
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
-	//first check if self is master
+/*	//first check if self is master
 	mid := self.getMasterId()
 	if self.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body   = strconv.FormatUint(uint64(mid), 10)
 		return nil
-	}
+	}*/
 
 	//then begin operation
 	self.quLock.Lock()
@@ -92,6 +92,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 
 // If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
+/*
 	//first check if self is master
 	mid := self.getMasterId()
 	if self.Id != mid {
@@ -99,6 +100,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 		reply.Body   = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
+	*/
 
 	self.quLock.Lock()
 	defer self.quLock.Unlock()
@@ -162,11 +164,13 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 
 func (self *LockStore) appendQueue(qname, item string) bool {
 	//TODO: use 2PC
-	msg := common.Content{"come on", "msg from lockstore"}
+	/*msg := common.Content{"come on", "msg from lockstore"}
 	var reply common.Content
 
+	fmt.Println("in lstore", len(self.srvs))
 	srv := self.srvs[2]
 	srv.Msg(msg, &reply)
+	*/
 
 	return self.ds.AppendQueue(qname, item)
 }

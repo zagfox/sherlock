@@ -3,9 +3,9 @@ package lockstore
 
 import (
 	//"fmt"
-	"sync"
 	"container/list"
 	"sherlock/common"
+	"sync"
 )
 
 var _ common.DataStoreIf = new(DataStore)
@@ -14,11 +14,11 @@ type DataStore struct {
 	lock   sync.Mutex
 	mqueue map[string]*list.List
 	//TODO change to single list
-	mlog   map[string]*list.List
+	mlog map[string]*list.List
 }
 
 func NewDataStore() *DataStore {
-	return &DataStore {
+	return &DataStore{
 		mlog:   make(map[string]*list.List),
 		mqueue: make(map[string]*list.List),
 	}
@@ -72,12 +72,10 @@ func (self *DataStore) PopQueue(qname string) (string, bool) {
 		return "", false
 	}
 
-	item:= q.Front().Value.(string)
+	item := q.Front().Value.(string)
 	q.Remove(q.Front())
 	if q.Len() == 0 {
 		delete(self.mqueue, qname)
 	}
 	return item, true
 }
-
-

@@ -4,9 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"sherlock/backend"
 	"sherlock/common"
-	"sherlock/message"
+	//"sherlock/message"
 	"sherlock/lockstore"
 	"strconv"
 )
@@ -19,6 +18,7 @@ var (
 func runSrv(rc *common.RC, i int) {
 	// Create backconfig
 
+	/*
 	// talks to srvs
 	srvs := make([]common.MessageIf, len(rc.SrvMsgPorts))
 	for i, saddr := range rc.SrvMsgPorts {
@@ -28,17 +28,19 @@ func runSrv(rc *common.RC, i int) {
 	// data  store and lock store
 	ds := lockstore.NewDataStore()
 	ls := lockstore.NewLockStore(i, ds, srvs)
+	*/
 
-	ChCtnt := make(chan common.Content, 1000)
+	//ChCtnt := make(chan common.Content, 1000)
 	//ready := make(chan bool)
 	backconfig := common.BackConfig{
+		Id:        i,
 		Addr:      rc.SrvPorts[i],
 		Laddr:     rc.SrvMsgPorts[i],
 		Peers:     rc.SrvMsgPorts,
-		DataStore: ds,
-		LockStore: ls,
-		Srvs:      srvs,
-		ChCtnt:    ChCtnt,
+		//DataStore: ds,
+		//LockStore: ls,
+		//Srvs:      srvs,
+		//ChCtnt:    ChCtnt,
 		Ready:     nil,
 	}
 
@@ -48,7 +50,7 @@ func runSrv(rc *common.RC, i int) {
 	if e != nil {
 		log.Fatal(e)
 	}*/
-	server := backend.NewLockServer(&backconfig)
+	server := lockstore.NewLockServer(&backconfig)
 	server.Start()
 }
 

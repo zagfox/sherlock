@@ -59,13 +59,14 @@ type DataStoreIf interface {
 
 // Backend config
 type BackConfig struct {
+	Id        int           // self id
 	Addr	  string        // rpc service address
 	Laddr     string        // server listen address
 	Peers	  []string      // peer server listening address
-	DataStore DataStoreIf   // underlying data store with lock map and log
-	LockStore LockStoreIf   // the underlying storage it should use
-	Srvs      []MessageIf   // method to talk to other servers
-	ChCtnt    chan Content  // channel for passing from msg listener to handler
+	//DataStore DataStoreIf   // underlying data store with lock map and log
+	//LockStore LockStoreIf   // the underlying storage it should use
+	//Srvs      []MessageIf   // method to talk to other servers
+	//ChCtnt    chan Content  // channel for passing from msg listener to handler
 	Ready     chan<- bool   // send a value when server is ready
 }
 
