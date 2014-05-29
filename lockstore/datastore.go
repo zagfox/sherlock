@@ -13,14 +13,14 @@ var _ common.DataStoreIf = new(DataStore)
 type DataStore struct {
 	lock   sync.Mutex
 	mqueue map[string]*list.List
-	//TODO change to single list
-	mlog map[string]*list.List
+
+	log *list.List
 }
 
 func NewDataStore() *DataStore {
 	return &DataStore{
-		mlog:   make(map[string]*list.List),
 		mqueue: make(map[string]*list.List),
+		log:    list.New(),
 	}
 }
 

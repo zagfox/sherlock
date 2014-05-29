@@ -63,3 +63,9 @@ type MsgConfig struct {
 	MsgListener MessageIf
 	Ready       chan<- bool
 }
+
+type MsgHandlerIf interface {
+	Handle(ctnt Content, reply *Content) error
+}
+
+

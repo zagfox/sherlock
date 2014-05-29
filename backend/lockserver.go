@@ -54,7 +54,7 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 func (self *LockServer) Start() {
 	// Start a thread to listen and handle messages
 	go self.startMsgListener()
-	go self.startMsgHandler()
+	//go self.startMsgHandler()
 
 	// Start a thread to reply log
 	go self.startLogPlayer()
@@ -97,9 +97,10 @@ func (self *LockServer) startLockService() {
 func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
-	msglistener := message.NewMsgListener(self.chCtnt)
+	msghandler := NewServerMsgHandler()
+	msglistener := message.NewMsgListener(self.chCtnt, msghandler)
 
-	msgconfig := common.MsgConfig{
+	msgconfig := common.MsgConfig {
 		Addr:        b.Laddr,
 		MsgListener: msglistener,
 		Ready:       nil,
@@ -110,6 +111,7 @@ func (self *LockServer) startMsgListener() {
 	message.ServeBack(&msgconfig)
 }
 
+/*
 // Start msg handler, it reads message from channel
 func (self *LockServer) startMsgHandler() {
 	b := self.bc
@@ -123,16 +125,19 @@ func (self *LockServer) startMsgHandler() {
 		}
 	}
 }
+*/
 
 // Thread that reply log
 func (self *LockServer) startLogPlayer() {
 	for {
-	/*	msg := common.Content{"come on", "msg from log player"}
+	/*
+		msg := common.Content{"come on", "msg from log player"}
 			var reply common.Content
 
 			srv := self.srvs[3]
 		    srv.Msg(msg, &reply)
-			*/
+	*/
+
 
 		time.Sleep(time.Second)
 	}

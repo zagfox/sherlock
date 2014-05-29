@@ -1,4 +1,4 @@
-//wrapped client that could send rpc call,
+// wrapped client that could send rpc call,
 // Wait for event, used directly by user
 package frontend
 
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"encoding/json"
+	//"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
 )
@@ -14,8 +14,8 @@ import (
 // struct that used by user
 type lockclient struct {
 	saddrs []string            //addr of its server
-	sid    int		           //id of master server
-	sidLock sync.Mutex          //lock for sid
+	mid    int		           //id of master server
+	midLock sync.Mutex          //lock for sid
 	clts   []common.LockStoreIf //client to call lock rpc
 
 	ch chan common.Content      //chan for listen
@@ -40,18 +40,19 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	acqOk := make(chan string, common.ChSize)
 
 	// Create lockclient
-	lc := lockclient{saddrs:saddrs, sid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}
+	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}
 
 	//Start msg listener and handler
 	lc.startMsgListener()
-	go lc.startMsgHandler()
+	//go lc.startMsgHandler()
 
 	return &lc
 }
 
 func (self *lockclient) startMsgListener() {
 	// Start msg listener, it is an rpc server
-	msglistener := message.NewMsgListener(self.ch)
+	msghandler := NewClientMsgHandler(self.laddr, self.acqOk)
+	msglistener := message.NewMsgListener(self.ch, msghandler)
 
 	msgconfig := common.MsgConfig{
 		Addr:        self.laddr,
@@ -64,6 +65,7 @@ func (self *lockclient) startMsgListener() {
 	go message.ServeBack(&msgconfig)
 }
 
+/*
 // Start msg handler, it reads message from channel
 func (self *lockclient) startMsgHandler() {
 	for {
@@ -89,21 +91,21 @@ func (self *lockclient) startMsgHandler() {
 		if event.Name == "acqOk" && event.Username == self.laddr {
 			self.acqOk<- bytes
 		}
-		*/
 	}
 }
+*/
 
 // Lock related function
-func (self *lockclient) getSid() int {
-	self.sidLock.Lock()
-	defer self.sidLock.Unlock()
-	return self.sid
+func (self *lockclient) getMid() int {
+	self.midLock.Lock()
+	defer self.midLock.Unlock()
+	return self.mid
 }
 
-func (self *lockclient) setSid(sid int) {
-	self.sidLock.Lock()
-	defer self.sidLock.Unlock()
-	self.sid = sid % len(self.saddrs)
+func (self *lockclient) setMid(mid int) {
+	self.midLock.Lock()
+	defer self.midLock.Unlock()
+	self.mid = mid % len(self.saddrs)
 }
 
 // Acquire and Release
@@ -113,14 +115,14 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	lu.Username = self.laddr
 
 	// find a machine that could be connected 
-	sid := self.getSid()
-	err := self.clts[sid].Acquire(lu, reply)
+	mid := self.getMid()
+	err := self.clts[mid].Acquire(lu, reply)
 	for ; err != nil;  {
-		sid = self.getSid()
-		err = self.clts[sid].Acquire(lu, reply)
+		mid = self.getMid()
+		err = self.clts[mid].Acquire(lu, reply)
 
 		if err != nil{
-			self.setSid(sid+1)
+			self.setMid(mid+1)
 			continue
 		}
 
@@ -152,11 +154,11 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 	lu.Username = self.laddr
 
 	// find a machine that could be connected 
-	sid := self.getSid()
-	err := self.clts[sid].Release(lu, reply)
-	for ; err != nil; self.setSid(sid+1) {
-		sid = self.getSid()
-		err = self.clts[sid].Release(lu, reply)
+	mid := self.getMid()
+	err := self.clts[mid].Release(lu, reply)
+	for ; err != nil; self.setMid(mid+1) {
+		mid = self.getMid()
+		err = self.clts[mid].Release(lu, reply)
 		if err == nil {break}
 	}
 
@@ -169,8 +171,8 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 }
 
 func (self *lockclient) ListQueue(lname string, cList *common.List) error {
-	sid := self.getSid()
-	return self.clts[sid].ListQueue(lname, cList)
+	mid := self.getMid()
+	return self.clts[mid].ListQueue(lname, cList)
 }
 
 var _ common.LockStoreIf = new(lockclient)
