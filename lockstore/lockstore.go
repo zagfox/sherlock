@@ -18,7 +18,7 @@ var _ common.LockStoreIf = new(LockStore)
 // struct to store lock infomation
 type LockStore struct {
 	// self server infomation
-	srvInfo *ServerInfo
+	srvView *ServerView
 
 	// entry to talk to other servers
 	srvs []common.MessageIf
@@ -27,10 +27,10 @@ type LockStore struct {
 	ds *DataStore
 }
 
-func NewLockStore(srvInfo *ServerInfo, srvs []common.MessageIf, ds *DataStore) *LockStore {
+func NewLockStore(srvView *ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
-		srvInfo: srvInfo,
+		srvView: srvView,
 		srvs:    srvs,
 		ds:      ds,
 	}
@@ -39,22 +39,20 @@ func NewLockStore(srvInfo *ServerInfo, srvs []common.MessageIf, ds *DataStore) *
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	// check if server is ready
-	state := self.srvInfo.GetState()
-	fmt.Println("lockserver", state)
+	state := self.srvView.GetState()
+	//fmt.Println("lockserver", state)
 	if state != common.SrvReady {
 		reply.Head = "NotReady"
 		return nil
 	}
 
 	// check if self is master
-	mid := self.srvInfo.GetMasterId()
-	if self.srvInfo.Id != mid {
+	mid := self.srvView.GetMasterId()
+	if self.srvView.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
-
-	fmt.Println("lockstore", "acquire")
 
 	// begin operation
 	lname := lu.Lockname
@@ -79,16 +77,16 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 // If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	// check if server is ready
-	state := self.srvInfo.GetState()
-	fmt.Println("lockserver", state)
+	state := self.srvView.GetState()
+	//fmt.Println("lockserver", state)
 	if state != common.SrvReady {
 		reply.Head = "NotReady"
 		return nil
 	}
 
 	// check if self is master
-	mid := self.srvInfo.GetMasterId()
-	if self.srvInfo.Id != mid {
+	mid := self.srvView.GetMasterId()
+	if self.srvView.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil

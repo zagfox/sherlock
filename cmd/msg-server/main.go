@@ -17,9 +17,8 @@ func main() {
 	flag.Parse()
 
 	// Create backconfig
-	ch := make(chan common.Content, 1)
 	mh := message.NewDefaultMsgHandler()
-	l := message.NewMsgListener(ch, mh)
+	l := message.NewMsgListener(mh)
 	//ready := make(chan bool)
 	msgconfig := common.MsgConfig{
 		Addr:	        *addr,

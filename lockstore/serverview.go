@@ -1,10 +1,11 @@
 package lockstore
 
 import (
+	"fmt"
 	"sync"
 )
 
-type ServerInfo struct {
+type ServerView struct {
 	Id      int           //self id
 	mid     int           //master server id
 	midLock sync.Mutex
@@ -13,22 +14,22 @@ type ServerInfo struct {
 	lockState sync.Mutex
 }
 
-func NewServerInfo(Id, mid int, state string) *ServerInfo {
-	return &ServerInfo{
+func NewServerView(Id, mid int, state string) *ServerView {
+	return &ServerView{
 		Id: Id, mid: mid,
 		state: state,
 	}
 }
 
 // master mid modify interface
-func (self *ServerInfo) SetMasterId(mid int) {
+func (self *ServerView) SetMasterId(mid int) {
 	self.midLock.Lock()
 	defer self.midLock.Unlock()
 
 	self.mid = mid
 }
 
-func (self *ServerInfo) GetMasterId() int {
+func (self *ServerView) GetMasterId() int {
 	self.midLock.Lock()
 	defer self.midLock.Unlock()
 
@@ -36,14 +37,19 @@ func (self *ServerInfo) GetMasterId() int {
 }
 
 // function to set lockserver state
-func (self *ServerInfo) GetState() string {
+func (self *ServerView) GetState() string {
 	self.lockState.Lock()
 	defer self.lockState.Unlock()
 	return self.state
 }
 
-func (self *ServerInfo) SetState(state string) {
+func (self *ServerView) SetState(state string) {
 	self.lockState.Lock()
 	defer self.lockState.Unlock()
 	self.state = state
+}
+
+func (self *ServerView) UpdateView() error {
+	fmt.Println("update view")
+	return nil
 }

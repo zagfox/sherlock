@@ -35,13 +35,13 @@ func TestLockStore(t *testing.T) {
 		Peers: rc.SrvMsgPorts,
 		Ready: nil,
 	}
-	srvInfo := lockstore.NewServerInfo(bc.Id, 0, "ready")
+	srvView := lockstore.NewServerView(bc.Id, 0, "ready")
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
 	ds := lockstore.NewDataStore()
-	s := lockstore.NewLockStore(srvInfo, srvs, ds)
+	s := lockstore.NewLockStore(srvView, srvs, ds)
 
 	// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}

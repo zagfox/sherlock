@@ -18,7 +18,6 @@ type lockclient struct {
 	midLock sync.Mutex          //lock for sid
 	clts   []common.LockStoreIf //client to call lock rpc
 
-	ch chan common.Content      //chan for listen
 	laddr string			//addr for client listening
 	lpid int                //pid for listen thread
 
@@ -33,14 +32,11 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 		clts[i] = NewClient(saddr)
 	}
 
-	// channel for listening all message
-	ch := make(chan common.Content,common.ChSize)
-
 	// acqOK channel, waiting for event of lock release
 	acqOk := make(chan string, common.ChSize)
 
 	// Create lockclient
-	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}
+	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, acqOk:acqOk}
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -52,7 +48,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 func (self *lockclient) startMsgListener() {
 	// Start msg listener, it is an rpc server
 	msghandler := NewClientMsgHandler(self.laddr, self.acqOk)
-	msglistener := message.NewMsgListener(self.ch, msghandler)
+	msglistener := message.NewMsgListener(msghandler)
 
 	msgconfig := common.MsgConfig{
 		Addr:        self.laddr,
@@ -64,36 +60,6 @@ func (self *lockclient) startMsgListener() {
 	//no error handling here
 	go message.ServeBack(&msgconfig)
 }
-
-/*
-// Start msg handler, it reads message from channel
-func (self *lockclient) startMsgHandler() {
-	for {
-		// Read event string from channel
-		ctnt := <-self.ch
-		fmt.Println(ctnt)
-
-		// Examine the content
-		switch ctnt.Head {
-		case "acqOk":
-			var lu common.LUpair
-			json.Unmarshal([]byte(ctnt.Body), &lu)
-			if lu.Username == self.laddr {
-				self.acqOk<- "true"
-			}
-		}
-		/*
-		//unmarshall it and handle it
-		var event common.Event
-		json.Unmarshal([]byte(bytes), &event)
-
-		// if event is acqSucc and parameter correct
-		if event.Name == "acqOk" && event.Username == self.laddr {
-			self.acqOk<- bytes
-		}
-	}
-}
-*/
 
 // Lock related function
 func (self *lockclient) getMid() int {
@@ -110,7 +76,6 @@ func (self *lockclient) setMid(mid int) {
 
 // Acquire and Release
 func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
-	fmt.Println("lockclient", "acquire")
 	//set lu username
 	lu.Username = self.laddr
 

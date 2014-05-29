@@ -15,18 +15,16 @@ import (
 
 type LockServer struct {
 	bc *common.BackConfig
-	srvInfo   *lockstore.ServerInfo  // structure to store self: server Id, masterid, state
+	srvView   *lockstore.ServerView  // structure to store self: server Id, masterid, state
 
 	srvs []common.MessageIf // method to talk to other servers
 	ds   common.DataStoreIf // underlying data store with lock map and log
 	ls   common.LockStoreIf // lock rpc entry
-
-	chCtnt    chan common.Content  // channel for passing from msg listener to handler
 }
 
 func NewLockServer(bc *common.BackConfig) *LockServer {
 	// server info
-	srvInfo := lockstore.NewServerInfo(bc.Id, 0, common.SrvReady)
+	srvView := lockstore.NewServerView(bc.Id, 0, common.SrvReady)
 
 	// srvs talk to all other servers
 	srvs := make([]common.MessageIf, len(bc.Peers))
@@ -36,15 +34,11 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 
 	// data  store and lock store
 	ds := lockstore.NewDataStore()
-	ls := lockstore.NewLockStore(srvInfo, srvs, ds)
-
-	// channel for passing from msg listener to handler
-	chCtnt := make(chan common.Content, common.ChSize)
+	ls := lockstore.NewLockStore(srvView, srvs, ds)
 
 	return &LockServer{
-		bc: bc, srvInfo: srvInfo,
+		bc: bc, srvView: srvView,
 		srvs: srvs, ds: ds, ls: ls,
-		chCtnt: chCtnt,
 	}
 }
 
@@ -98,7 +92,7 @@ func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
 	msghandler := NewServerMsgHandler()
-	msglistener := message.NewMsgListener(self.chCtnt, msghandler)
+	msglistener := message.NewMsgListener(msghandler)
 
 	msgconfig := common.MsgConfig {
 		Addr:        b.Laddr,
@@ -110,22 +104,6 @@ func (self *LockServer) startMsgListener() {
 	//no error handling here
 	message.ServeBack(&msgconfig)
 }
-
-/*
-// Start msg handler, it reads message from channel
-func (self *LockServer) startMsgHandler() {
-	b := self.bc
-	for {
-		// Read event string from channel
-		ctnt := <-self.chCtnt
-		fmt.Println(b.Addr, ctnt)
-
-		// Examine the content
-		switch ctnt.Head {
-		}
-	}
-}
-*/
 
 // Thread that reply log
 func (self *LockServer) startLogPlayer() {
