@@ -6,7 +6,8 @@ import (
 	"log"
 	"sherlock/common"
 	//"sherlock/message"
-	"sherlock/lockstore"
+	//"sherlock/lockstore"
+	"sherlock/backend"
 	"strconv"
 )
 
@@ -31,7 +32,7 @@ func runSrv(rc *common.RC, i int) {
 	if e != nil {
 		log.Fatal(e)
 	}*/
-	server := lockstore.NewLockServer(&backconfig)
+	server := backend.NewLockServer(&backconfig)
 	server.Start()
 }
 

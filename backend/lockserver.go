@@ -1,22 +1,21 @@
-package lockstore
+package backend
 
 import (
 	"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
-	"sync"
+	//"sync"
 	"time"
-	"strconv"
 
 	"sherlock/common"
 	"sherlock/message"
+	"sherlock/lockstore"
 )
 
-var _ common.LockStoreIf = new(lockserver)
-
-type lockserver struct {
+type LockServer struct {
 	bc *common.BackConfig
+	srvInfo   *lockstore.ServerInfo  // structure to store self: server Id, masterid, state
 
 	srvs []common.MessageIf // method to talk to other servers
 	ds   common.DataStoreIf // underlying data store with lock map and log
@@ -24,15 +23,20 @@ type lockserver struct {
 
 	chCtnt    chan common.Content  // channel for passing from msg listener to handler
 
+/*
 	Id      int //self id
 	mid     int //master server id
 	midLock sync.Mutex
 
 	state     string //indicate if server state: updateview, transdata, ready
 	lockState sync.Mutex
+	*/
 }
 
-func NewLockServer(bc *common.BackConfig) *lockserver {
+func NewLockServer(bc *common.BackConfig) *LockServer {
+	// server info
+	srvInfo := lockstore.NewServerInfo(bc.Id, 0, "ready")
+
 	// talks to srvs
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
@@ -40,28 +44,30 @@ func NewLockServer(bc *common.BackConfig) *lockserver {
 	}
 
 	// data  store and lock store
-	ds := NewDataStore()
-	ls := NewLockStore(bc.Id, ds, srvs)
+	ds := lockstore.NewDataStore()
+	ls := lockstore.NewLockStore(srvInfo, srvs, ds)
 
 	// channel for passing from msg listener to handler
 	chCtnt := make(chan common.Content, 1000)
 
-	return &lockserver{
-		bc: bc, srvs: srvs, ds: ds, ls: ls,
+	return &LockServer{
+		bc: bc, srvInfo: srvInfo,
+		srvs: srvs, ds: ds, ls: ls,
 		chCtnt: chCtnt,
-		Id: bc.Id, mid: 0, state: "ready",
+		//Id: bc.Id, mid: 0, state: "updateview",
 	}
 }
 
+/*
 // master mid modify interface
-func (self *lockserver) setMasterId(mid int) {
+func (self *LockServer) setMasterId(mid int) {
 	self.midLock.Lock()
 	defer self.midLock.Unlock()
 
 	self.mid = mid
 }
 
-func (self *lockserver) getMasterId() int {
+func (self *LockServer) getMasterId() int {
 	self.midLock.Lock()
 	defer self.midLock.Unlock()
 
@@ -69,55 +75,79 @@ func (self *lockserver) getMasterId() int {
 }
 
 // function to set lockserver state
-func (self *lockserver) getState() string {
+func (self *LockServer) getState() string {
 	self.lockState.Lock()
 	defer self.lockState.Unlock()
 	return self.state
 }
 
-func (self *lockserver) setState(state string) {
+func (self *LockServer) setState(state string) {
 	self.lockState.Lock()
 	defer self.lockState.Unlock()
 	self.state = state
 }
+*/
 
+
+/*
 // Three interface for rpc
-func (self *lockserver) Acquire(lu common.LUpair, reply *common.Content) error {
-	//first check if self is master
-	mid := self.getMasterId()
+func (self *LockServer) Acquire(lu common.LUpair, reply *common.Content) error {
+	// check if server is ready
+	state := self.srvInfo.GetState()
+	fmt.Println("lockserver", state)
+	if state != "ready" {
+		reply.Head = "NotReady"
+		return nil
+	}
+
+	// check if self is master
+	mid := self.srvInfo.GetMasterId()
 	if self.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
+
 	return self.ls.Acquire(lu, reply)
 }
 
-func (self *lockserver) Release(lu common.LUpair, reply *common.Content) error {
-	//first check if self is master
-	mid := self.getMasterId()
+func (self *LockServer) Release(lu common.LUpair, reply *common.Content) error {
+	// check if server is ready
+	state := self.srvInfo.GetState()
+	if state != "ready" {
+		reply.Head = "NotReady"
+		return nil
+	}
+
+	// check if self is master
+	mid := self.srvInfo.GetMasterId()
 	if self.Id != mid {
 		reply.Head = "NotMaster"
 		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
+
 	return self.ls.Release(lu, reply)
 }
 
-func (self *lockserver) ListQueue(lname string, cList *common.List) error {
+func (self *LockServer) ListQueue(lname string, cList *common.List) error {
 	return self.ls.ListQueue(lname, cList)
 }
+*/
 
-func (self *lockserver) Start() {
-	// Start lock service rpc
-	go self.startLockService()
-
+/*
+ *Start several threads
+ */
+func (self *LockServer) Start() {
 	// Start a thread to listen and handle messages
 	go self.startMsgListener()
 	go self.startMsgHandler()
 
 	// Start a thread to reply log
 	go self.startLogPlayer()
+
+	// Start lock service rpc
+	go self.startLockService()
 
 	if self.bc.Ready != nil {
 		self.bc.Ready <- true
@@ -126,7 +156,7 @@ func (self *lockserver) Start() {
 	select {}
 }
 
-func (self *lockserver) startLockService() {
+func (self *LockServer) startLockService() {
 	b := self.bc
 	// listen to address
 	l, e := net.Listen("tcp", b.Addr)
@@ -137,8 +167,8 @@ func (self *lockserver) startLockService() {
 	}
 
 	rpcServer := rpc.NewServer()
-	//e = rpcServer.Register(b.LockStore)
 	e = rpcServer.Register(self.ls)
+	//e = rpcServer.Register(common.LockStoreIf(self))
 
 	if e != nil {
 		if b.Ready != nil {
@@ -151,7 +181,7 @@ func (self *lockserver) startLockService() {
 }
 
 // start msg listener
-func (self *lockserver) startMsgListener() {
+func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
 	msglistener := message.NewMsgListener(self.chCtnt)
@@ -168,7 +198,7 @@ func (self *lockserver) startMsgListener() {
 }
 
 // Start msg handler, it reads message from channel
-func (self *lockserver) startMsgHandler() {
+func (self *LockServer) startMsgHandler() {
 	b := self.bc
 	for {
 		// Read event string from channel
@@ -182,7 +212,7 @@ func (self *lockserver) startMsgHandler() {
 }
 
 // Thread that reply log
-func (self *lockserver) startLogPlayer() {
+func (self *LockServer) startLogPlayer() {
 	for {
 	/*	msg := common.Content{"come on", "msg from log player"}
 			var reply common.Content

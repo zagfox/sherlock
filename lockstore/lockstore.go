@@ -5,7 +5,8 @@ import (
 	"fmt"
 	//"errors"
 	"container/list"
-	"sync"
+	//"sync"
+	"strconv"
 	"encoding/json"
 
 	"sherlock/common"
@@ -14,25 +15,47 @@ import (
 
 var _ common.LockStoreIf = new(LockStore)
 
-//struct to store lock infomation
+// struct to store lock infomation
 type LockStore struct {
-	//data store for log and lock map queue
-	ds     *DataStore
+	// self server infomation
+	srvInfo *ServerInfo
 
 	// entry to talk to other servers
-	srvs   []common.MessageIf
+	srvs []common.MessageIf
+
+	//data store for log and lock map queue
+	ds *DataStore
 }
 
-func NewLockStore(Id int, ds *DataStore, srvs []common.MessageIf) *LockStore {
+func NewLockStore(srvInfo *ServerInfo, srvs []common.MessageIf, ds *DataStore) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
-		ds:     ds, //NewDataStore(),
-		srvs:   srvs,
+		srvInfo: srvInfo,
+		srvs:    srvs,
+		ds:      ds,
 	}
 }
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
+	// check if server is ready
+	state := self.srvInfo.GetState()
+	fmt.Println("lockserver", state)
+	if state != "ready" {
+		reply.Head = "NotReady"
+		return nil
+	}
+
+	// check if self is master
+	mid := self.srvInfo.GetMasterId()
+	if self.srvInfo.Id != mid {
+		reply.Head = "NotMaster"
+		reply.Body = strconv.FormatUint(uint64(mid), 10)
+		return nil
+	}
+
+	fmt.Println("lockstore", "acquire")
+
 	// begin operation
 	lname := lu.Lockname
 	uname := lu.Username
@@ -55,6 +78,22 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 
 // If queue lenth is 0, delete the queue
 func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
+	// check if server is ready
+	state := self.srvInfo.GetState()
+	fmt.Println("lockserver", state)
+	if state != "ready" {
+		reply.Head = "NotReady"
+		return nil
+	}
+
+	// check if self is master
+	mid := self.srvInfo.GetMasterId()
+	if self.srvInfo.Id != mid {
+		reply.Head = "NotMaster"
+		reply.Body = strconv.FormatUint(uint64(mid), 10)
+		return nil
+	}
+
 	// Check args number
 	lname := lu.Lockname
 	uname := lu.Username
@@ -112,13 +151,13 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 func (self *LockStore) appendQueue(qname, item string) bool {
 	//TODO: use 2PC
 	/*
-	// check if msg is functioning
-	msg := common.Content{"come on", "msg from lockstore"}
-	var reply common.Content
+		// check if msg is functioning
+		msg := common.Content{"come on", "msg from lockstore"}
+		var reply common.Content
 
-	fmt.Println("in lstore", len(self.srvs))
-	srv := self.srvs[2]
-	srv.Msg(msg, &reply)
+		fmt.Println("in lstore", len(self.srvs))
+		srv := self.srvs[2]
+		srv.Msg(msg, &reply)
 	*/
 
 	return self.ds.AppendQueue(qname, item)
@@ -153,4 +192,3 @@ func (self *LockStore) updateRelease(lname string) error {
 
 	return nil
 }
-

@@ -1,31 +1,49 @@
 package test
 
 import (
-	"testing"
 	"runtime/debug"
+	"testing"
+	"log"
 
-	"sherlock/lockstore"
 	"sherlock/common"
+	"sherlock/lockstore"
+	"sherlock/message"
 )
+
+func ne(e error) {
+	if e != nil {
+		debug.PrintStack()
+		log.Fatal(e)
+	}
+}
+
+func as(cond bool) {
+	if !cond {
+		debug.PrintStack()
+		log.Fatal("assertion failed")
+	}
+}
 
 func TestLockStore(t *testing.T) {
 
-	ne := func(e error) {
-		if e != nil {
-			debug.PrintStack()
-			t.Fatal(e)
-		}
+	rc, _ := common.LoadRC(common.DefaultRCPath)
+	Id := 0
+	bc := common.BackConfig{
+		Id:    Id,
+		Addr:  rc.SrvPorts[Id],
+		Laddr: rc.SrvMsgPorts[Id],
+		Peers: rc.SrvMsgPorts,
+		Ready: nil,
 	}
-
-	as := func(cond bool) {
-		if !cond {
-			debug.PrintStack()
-			t.Fatal("assertion failed")
-		}
+	srvInfo := lockstore.NewServerInfo(bc.Id, 0, "ready")
+	srvs := make([]common.MessageIf, len(bc.Peers))
+	for i, saddr := range bc.Peers {
+		srvs[i] = message.NewMsgClient(saddr)
 	}
-
 	ds := lockstore.NewDataStore()
-	s := lockstore.NewLockStore(0, ds, nil)
+	s := lockstore.NewLockStore(srvInfo, srvs, ds)
+
+	// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content
@@ -36,9 +54,9 @@ func TestLockStore(t *testing.T) {
 	as(reply.Head == "LockAcquired")
 
 	/*
-	// Deadlock, don't know what to do
-	ne(s.Acquire(lu1, &succ))
-	as(succ == false)
+		// Deadlock, don't know what to do
+		ne(s.Acquire(lu1, &succ))
+		as(succ == false)
 	*/
 
 	ne(s.Release(lu1, &reply))

@@ -5,6 +5,7 @@ package frontend
 import (
 	"fmt"
 	"sync"
+	"time"
 	"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
@@ -107,16 +108,29 @@ func (self *lockclient) setSid(sid int) {
 
 // Acquire and Release
 func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
+	fmt.Println("lockclient", "acquire")
 	//set lu username
 	lu.Username = self.laddr
 
 	// find a machine that could be connected 
 	sid := self.getSid()
 	err := self.clts[sid].Acquire(lu, reply)
-	for ; err != nil; self.setSid(sid+1) {
+	for ; err != nil;  {
 		sid = self.getSid()
 		err = self.clts[sid].Acquire(lu, reply)
-		if err == nil {break}
+
+		if err != nil{
+			self.setSid(sid+1)
+			continue
+		}
+
+		if reply.Head == "NotReady" {
+			fmt.Println("NotReady")
+			time.Sleep(time.Second)
+			continue
+		}
+
+		break
 	}
 
 	// handle reply Head
