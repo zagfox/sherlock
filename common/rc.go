@@ -1,9 +1,9 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"encoding/json"
 )
 
 var DefaultRCPath = "/classes/cse223b/sp14/cse223f7zhu/gopath/src/sherlock/common/conf.rc"
