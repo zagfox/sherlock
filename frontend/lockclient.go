@@ -34,10 +34,10 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	}
 
 	// channel for listening all message
-	ch := make(chan common.Content, 1000)
+	ch := make(chan common.Content,common.ChSize)
 
 	// acqOK channel, waiting for event of lock release
-	acqOk := make(chan string, 1000)
+	acqOk := make(chan string, common.ChSize)
 
 	// Create lockclient
 	lc := lockclient{saddrs:saddrs, sid:0, clts:clts, laddr:laddr, ch:ch, acqOk:acqOk}

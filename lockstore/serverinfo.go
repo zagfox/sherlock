@@ -5,11 +5,11 @@ import (
 )
 
 type ServerInfo struct {
-	Id      int //self id
-	mid     int //master server id
+	Id      int           //self id
+	mid     int           //master server id
 	midLock sync.Mutex
 
-	state     string //indicate if server state: updateview, transdata, ready
+	state     string      //indicate if server state: updateview, transdata, ready
 	lockState sync.Mutex
 }
 

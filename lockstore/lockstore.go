@@ -41,7 +41,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	// check if server is ready
 	state := self.srvInfo.GetState()
 	fmt.Println("lockserver", state)
-	if state != "ready" {
+	if state != common.SrvReady {//"ready" {
 		reply.Head = "NotReady"
 		return nil
 	}
@@ -81,7 +81,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	// check if server is ready
 	state := self.srvInfo.GetState()
 	fmt.Println("lockserver", state)
-	if state != "ready" {
+	if state != common.SrvReady {
 		reply.Head = "NotReady"
 		return nil
 	}
