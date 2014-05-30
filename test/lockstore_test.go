@@ -24,10 +24,8 @@ func as(cond bool) {
 	}
 }
 
-func TestLockStore(t *testing.T) {
-
+func startLockStore(Id int) common.LockStoreIf {
 	rc, _ := common.LoadRC(common.DefaultRCPath)
-	Id := 0
 	bc := common.BackConfig{
 		Id:    Id,
 		Addr:  rc.SrvPorts[Id],
@@ -41,9 +39,12 @@ func TestLockStore(t *testing.T) {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
 	ds := lockstore.NewDataStore()
-	s := lockstore.NewLockStore(srvView, srvs, ds)
+	ls := lockstore.NewLockStore(srvView, srvs, ds)
+	return ls
+}
 
-	// Start testing here
+func basicTestLockStore(s common.LockStoreIf) {
+// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content
@@ -53,8 +54,7 @@ func TestLockStore(t *testing.T) {
 	ne(s.Acquire(lu1, &reply))
 	as(reply.Head == "LockAcquired")
 
-	/*
-		// Deadlock, don't know what to do
+	/*	// Assume NO Deadlock
 		ne(s.Acquire(lu1, &succ))
 		as(succ == false)
 	*/
@@ -65,19 +65,31 @@ func TestLockStore(t *testing.T) {
 	ne(s.Release(lu1, &reply))
 	as(reply.Head == "LockNotFound")
 
-	//test for two user
+	//test for two user acquire one lock
 	lu1 = common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 = common.LUpair{Lockname: "l1", Username: "bob"}
 	ne(s.Acquire(lu1, &reply))
 	ne(s.Acquire(lu2, &reply))
-	//as(succ == false)
+	as(reply.Head == "LockQueuing")
 
-	//test for queue
+	//check queue
 	ne(s.ListQueue("l1", &cList))
 	as(len(cList.L) == 2)
 	as(cList.L[0] == "alice")
 	as(cList.L[1] == "bob")
 
+	// one of them release it
+	ne(s.Release(lu1, &reply))
+	ne(s.ListQueue("l1", &cList))
+	as(len(cList.L) == 1)
+	as(cList.L[0] == "bob")
+
 	ne(s.ListQueue("l2", &cList))
 	as(len(cList.L) == 0)
+}
+
+
+func TestLockStore(t *testing.T) {
+	ls := startLockStore(0)
+	basicTestLockStore(ls)
 }
