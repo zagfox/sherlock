@@ -14,7 +14,7 @@ type DataStore struct {
 	lock   sync.Mutex
 	mqueue map[string]*list.List
 
-	log []common.Log
+	Log []*common.Log
 }
 
 func NewDataStore() *DataStore {
