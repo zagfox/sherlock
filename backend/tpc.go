@@ -3,7 +3,8 @@ package backend
 import (
 	"sherlock/common"
 	"sherlock/lockstore"
-	"sync"
+	"sort"
+//	"sync"
 )
 
 var _ common.MsgHandlerIf = new(TpcMsgHandler)
@@ -25,7 +26,8 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 	defer self.ds.LogLock.Lock()
 	msg := common.ParseString(ctnt.Body)
 	// the message is outdated
-	if msg.VID < self.view.VID{
+	vid, _ := self.view.GetView()
+	if msg.VID < vid{
 		return nil
 	}
 	prepared := false
@@ -39,30 +41,27 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 				case "prepare":
 					prepared = true
 				case "commit":
-					committed := true
+					committed = true
 				case "abort":
-					aborted := true
+					aborted = true
 			}
 		}
 	}
 	rep := common.Log{ VID:msg.VID, SN:serial, Phase:msg.Phase }
 	switch msg.Phase{
 		case "prepare":
+			if committed{
 			// IF already committed	-> reply prepare OK
-			if comitted{
 				rep.OK = true
-			}
+			}else if aborted{
 			// IF already aborted	-> reply prepare !OK
-			else if aborted{
 				rep.OK = false
-			}
+			}else if prepared{
 			// IF prepare received	-> reply prepare OK
-			else if prepared{
 				rep.OK = true
-			}
+			}else{
 			// IF not received		-> write log and reply prepare OK
-			else{
-				append(self.ds.Log, msg)
+				self.ds.Log = append(self.ds.Log, &msg)
 				var lslice common.LogSlice
 				lslice = self.ds.Log
 				sort.Sort(lslice)
@@ -73,10 +72,9 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 			// IF already committed	-> reply commit
 			if committed{
 				rep.OK = true
-			}
+			}else{
 			// ELSE					-> write log and reply commit
-			else{
-				append(self.ds.Log, msg)
+				self.ds.Log = append(self.ds.Log, &msg)
 				var lslice common.LogSlice
 				lslice = self.ds.Log
 				sort.Sort(lslice)
@@ -87,10 +85,9 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 			// IF already aborted	-> reply abort
 			if aborted{
 				rep.OK = true
-			}
+			}else{
 			// ELSE					-> write log and reply abort
-			else{
-				append(self.ds.Log, msg)
+				self.ds.Log = append(self.ds.Log, &msg)
 				var lslice common.LogSlice
 				lslice = self.ds.Log
 				sort.Sort(lslice)

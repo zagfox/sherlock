@@ -1,9 +1,9 @@
 package backend
 
 import (
-	"sherlock/common"
-	"sherlock/lockstore"
+	//"sherlock/common"
+	//"sherlock/lockstore"
 )
 
-type LogPlayer{
+type LogPlayer struct{
 }
