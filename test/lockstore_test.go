@@ -8,6 +8,7 @@ import (
 	"sherlock/common"
 	"sherlock/lockstore"
 	"sherlock/message"
+	"sherlock/paxos"
 )
 
 func ne(e error) {
@@ -33,11 +34,13 @@ func startLockStore(Id int) common.LockStoreIf {
 		Peers: rc.SrvMsgPorts,
 		Ready: nil,
 	}
-	srvView := lockstore.NewServerView(bc.Id, 1, 0, "ready")
+
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
+
+	srvView := paxos.NewServerView(bc.Id, 1, 0, "ready", srvs)
 	ds := lockstore.NewDataStore()
 	ls := lockstore.NewLockStore(srvView, srvs, ds)
 	return ls

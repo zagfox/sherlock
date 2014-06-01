@@ -11,6 +11,7 @@ import (
 
 	"sherlock/common"
 	"sherlock/message"
+	"sherlock/paxos"
 )
 
 var _ common.LockStoreIf = new(LockStore)
@@ -18,7 +19,7 @@ var _ common.LockStoreIf = new(LockStore)
 // struct to store lock infomation
 type LockStore struct {
 	// self server infomation
-	srvView *ServerView
+	srvView *paxos.ServerView
 
 	// entry to talk to other servers
 	srvs []common.MessageIf
@@ -27,7 +28,7 @@ type LockStore struct {
 	ds *DataStore
 }
 
-func NewLockStore(srvView *ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
+func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
 		srvView: srvView,

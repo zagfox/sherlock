@@ -13,8 +13,8 @@ type ServerMsgHandler struct {
 	handlePaxos common.MsgHandlerIf
 }
 
-func NewServerMsgHandler() common.MsgHandlerIf {
-	paxosHandler := paxos.NewPaxosMsgHandler()
+func NewServerMsgHandler(srvView *paxos.ServerView) common.MsgHandlerIf {
+	paxosHandler := paxos.NewPaxosMsgHandler(srvView)
 	return &ServerMsgHandler{handlePaxos: paxosHandler}
 }
 
