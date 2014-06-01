@@ -49,7 +49,7 @@ type BackConfig struct {
 	Addr  string      // rpc service address
 	Laddr string      // server listen address
 	Peers []string    // peer server listening address
-	Ready chan<- bool // send a value when server is ready
+	Ready chan bool // send a value when server is ready
 }
 
 // Interface for msg send/recv
@@ -61,9 +61,11 @@ type MessageIf interface {
 type MsgConfig struct {
 	Addr        string
 	MsgListener MessageIf
-	Ready       chan<- bool
+	Ready       chan bool
 }
 
 type MsgHandlerIf interface {
 	Handle(ctnt Content, reply *Content) error
 }
+
+

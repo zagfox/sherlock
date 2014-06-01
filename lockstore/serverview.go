@@ -3,10 +3,14 @@ package lockstore
 import (
 	"fmt"
 	"sync"
+	"errors"
 )
 
+// ServerView, used to maintain view group and info
 type ServerView struct {
 	Id      int           //self id
+	Num  int           // total lock server number
+
 	mid     int           //master server id
 	midLock sync.Mutex
 
@@ -14,13 +18,23 @@ type ServerView struct {
 	view   []int          // members in current view
 	vlock sync.Mutex
 
+	cntReq int            // number of request for uptate
+	cntLock sync.Mutex
+
 	state     string      //indicate if server state: updateview, transdata, ready
 	lockState sync.Mutex
 }
 
-func NewServerView(Id, mid int, state string) *ServerView {
+func NewServerView(Id, Num, mid int, state string) *ServerView {
+	// suppose the first view has all the member
+	view := make([]int, 0)
+	for i := 0; i < Num; i++ {
+		view = append(view, i)
+	}
 	return &ServerView{
-		Id: Id, mid: mid,
+		Id: Id, Num: Num,
+		mid: mid,
+		vid: 0, view: view,
 		state: state,
 	}
 }
@@ -56,6 +70,21 @@ func (self *ServerView) SetView(vid int, view []int) {
 	self.view = view
 }
 
+// function to operate on cntReq
+func (self *ServerView) getCntReq() int {
+	self.cntLock.Lock()
+	defer self.cntLock.Unlock()
+
+	return self.cntReq
+}
+
+func (self *ServerView) setCntReq(cntReq int) {
+	self.cntLock.Lock()
+	defer self.cntLock.Unlock()
+
+	self.cntReq = cntReq
+}
+
 // function to set lockserver state
 func (self *ServerView) GetState() string {
 	self.lockState.Lock()
@@ -69,7 +98,24 @@ func (self *ServerView) SetState(state string) {
 	self.state = state
 }
 
-func (self *ServerView) UpdateView() error {
-	fmt.Println("update view")
+// request to update view
+func (self *ServerView) RequestUpdateView() error {
+	self.cntLock.Lock()
+	defer self.cntLock.Unlock()
+
+	cntReq := self.getCntReq()
+	if self.cntReq == 0 {
+		self.setCntReq(cntReq+1)
+		return self.updateView()
+	} else {
+		return errors.New("already updating")
+	}
+}
+
+// update the view group member
+func (self *ServerView) updateView() error {
+	fmt.Println("updating view")
 	return nil
 }
+
+

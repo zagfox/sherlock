@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	"fmt"
+	//"fmt"
 	//"errors"
 	"container/list"
 	//"sync"
@@ -110,7 +110,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	}
 
 	//if found it and name is correct, release it
-	fmt.Println(q.Front().Value.(string))
+	//fmt.Println(q.Front().Value.(string))
 	if q.Front().Value.(string) == uname {
 		//TODO, use two pc
 		reply.Head = "LockReleased"
@@ -166,6 +166,7 @@ func (self *LockStore) popQueue(qname string) (string, bool) {
 	return self.ds.PopQueue(qname)
 }
 
+// When release, told the first one in queue
 func (self *LockStore) updateRelease(lname string) error {
 	// if anyone waiting, find it and send Event
 	q, ok := self.getQueue(lname)

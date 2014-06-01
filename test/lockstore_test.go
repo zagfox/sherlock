@@ -33,7 +33,7 @@ func startLockStore(Id int) common.LockStoreIf {
 		Peers: rc.SrvMsgPorts,
 		Ready: nil,
 	}
-	srvView := lockstore.NewServerView(bc.Id, 0, "ready")
+	srvView := lockstore.NewServerView(bc.Id, 1, 0, "ready")
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
 		srvs[i] = message.NewMsgClient(saddr)

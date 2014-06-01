@@ -10,8 +10,8 @@ type TpcMsgHandler struct {
 }
 
 func NewTpcMsgHandler() common.MsgHandlerIf {
-    return &TpcMsgHandler{}
-	}
+	return &TpcMsgHandler{}
+}
 
 func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	return nil
