@@ -14,7 +14,7 @@ type TpcMsgHandler struct {
 }
 
 func NewTpcMsgHandler() common.MsgHandlerIf {
-    return &TpcMsgHandler{}
+	return &TpcMsgHandler{}
 }
 
 //Handles the message involved with 2PC between the servers

@@ -18,12 +18,13 @@ var (
 func runSrv(rc *common.RC, i int) {
 	// Create backconfig
 
+	ready := make(chan bool, 1)
 	backconfig := common.BackConfig{
 		Id:        i,
 		Addr:      rc.SrvPorts[i],
 		Laddr:     rc.SrvMsgPorts[i],
 		Peers:     rc.SrvMsgPorts,
-		Ready:     nil,
+		Ready:     ready,
 	}
 
 	// start a back-end

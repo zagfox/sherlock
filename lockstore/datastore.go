@@ -1,4 +1,4 @@
-//log file struct, used in 2pc
+//Log file struct, used in 2pc
 package lockstore
 
 import (
@@ -14,6 +14,7 @@ type DataStore struct {
 	lock   sync.Mutex
 	mqueue map[string]*list.List
 
+	// expose Log
 	Log []*common.Log
 	LogLock sync.Mutex
 }
@@ -29,7 +30,7 @@ func (self *DataStore) GetQueue(qname string) (*list.List, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	//todo, use log
+	//todo, use Log
 	q, ok := self.mqueue[qname]
 	return q, ok
 }
@@ -38,7 +39,7 @@ func (self *DataStore) AppendQueue(qname, item string) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	//todo, use log
+	//todo, use Log
 	q, ok := self.mqueue[qname]
 	if !ok {
 		que := list.New()
@@ -67,7 +68,7 @@ func (self *DataStore) PopQueue(qname string) (string, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	//todo, use log
+	//todo, use Log
 	q, ok := self.mqueue[qname]
 	if !ok || q.Len() == 0 {
 		return "", false

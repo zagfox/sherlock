@@ -15,8 +15,8 @@ type List struct {
 
 // type for Content that every rpc call returns
 type Content struct {
-	Head   string
-	Body   string
+	Head string
+	Body string
 }
 
 // Interface to call a lock operation
@@ -45,11 +45,11 @@ type DataStoreIf interface {
 
 // Backend config
 type BackConfig struct {
-	Id        int           // self id
-	Addr	  string        // rpc service address
-	Laddr     string        // server listen address
-	Peers	  []string      // peer server listening address
-	Ready     chan<- bool   // send a value when server is ready
+	Id    int         // self id
+	Addr  string      // rpc service address
+	Laddr string      // server listen address
+	Peers []string    // peer server listening address
+	Ready chan bool // send a value when server is ready
 }
 
 // Interface for msg send/recv
@@ -61,7 +61,7 @@ type MessageIf interface {
 type MsgConfig struct {
 	Addr        string
 	MsgListener MessageIf
-	Ready       chan<- bool
+	Ready       chan bool
 }
 
 type MsgHandlerIf interface {

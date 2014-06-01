@@ -96,7 +96,6 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 			time.Sleep(time.Second)
 			continue
 		}
-
 		break
 	}
 
