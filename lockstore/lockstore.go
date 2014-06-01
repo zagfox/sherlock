@@ -170,6 +170,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 			msg := common.Content{Head: "2pc", Body: log.ToString()}
 			reply := common.Content{}
 			if self.srvs[idx].Msg(msg, &reply) != nil {
+				self.srvView.DelNode(idx)
 				bad = true
 				rep <- true
 				return
@@ -201,6 +202,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 			msg := common.Content{Head: "2pc", Body: log.ToString()}
 			reply := common.Content{}
 			if self.srvs[idx].Msg(msg, &reply) != nil {
+				self.srvView.DelNode(idx)
 				bad = true
 				rep <- false
 				return
