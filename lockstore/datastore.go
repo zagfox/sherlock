@@ -15,14 +15,14 @@ type DataStore struct {
 	mqueue map[string]*list.List
 
 	// expose Log
-	Log []common.Log
+	Log []*common.Log
 	LogLock sync.Mutex
 }
 
 func NewDataStore() *DataStore {
 	return &DataStore{
 		mqueue: make(map[string]*list.List),
-		Log:    make([]common.Log, 0),
+		Log:    make([]*common.Log, 0),
 	}
 }
 
