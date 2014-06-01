@@ -35,14 +35,14 @@ func (self *PaxosMsgHandler) Handle(ctnt common.Content, reply *common.Content) 
 func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Content) error {
 	_, view := self.srvView.GetView()
 	//if pb.VID <= vid {
-		reply.Head = "paxos"
-		reply.Body = PaxosToString(common.PaxosBody{
-			Phase: "prepare", Action: "oldview",
-			ProposerId:    -1,
-			ProposalNum:   -1,
-			ProposalValue: -1,
-			VID: -1, View: view})
-		return nil
+	reply.Head = "paxos"
+	reply.Body = PaxosToString(common.PaxosBody{
+		Phase: "prepare", Action: "oldview",
+		ProposerId:    -1,
+		ProposalNum:   -1,
+		ProposalValue: -1,
+		VID:           -1, View: view})
+	return nil
 	//}
 	//return nil
 }
