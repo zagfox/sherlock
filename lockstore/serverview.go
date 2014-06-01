@@ -15,7 +15,7 @@ type ServerView struct {
 	midLock sync.Mutex
 
 	vid    int            // id for view
-	view   []int          // members in current view
+	view   []int          // members in current view, 0 means not in, 1 means in view
 	vlock sync.Mutex
 
 	cntReq int            // number of request for uptate
@@ -27,9 +27,9 @@ type ServerView struct {
 
 func NewServerView(Id, Num, mid int, state string) *ServerView {
 	// suppose the first view has all the member
-	view := make([]int, 0)
+	view := make([]int, Num)
 	for i := 0; i < Num; i++ {
-		view = append(view, i)
+		view[i] = 1
 	}
 	return &ServerView{
 		Id: Id, Num: Num,
@@ -59,16 +59,52 @@ func (self *ServerView) GetView() (int, []int) {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
 
-	return self.vid, self.view
+	ret := make([]int, 0)
+	for i, v := range(self.view) {
+		if v == 1 {
+			ret = append(ret, i)
+		}
+	}
+
+	return self.vid, ret
 }
 
+// Set vid and view number
 func (self *ServerView) SetView(vid int, view []int) {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
 
 	self.vid = vid
-	self.view = view
+	for i, _ := range(self.view) {
+		self.view[i] = 0
+	}
+	for _, v := range(view) {
+		self.view[v] = 1
+	}
 }
+
+func (self *ServerView) AddNode(nid int) {
+	self.vlock.Lock()
+	defer self.vlock.Unlock()
+
+	// check if node exist
+	if self.view[nid] == 0 {
+		self.vid++
+		self.view[nid] = 1
+	}
+}
+
+func (self *ServerView) DelNode(nid int) {
+	self.vlock.Lock()
+	defer self.vlock.Unlock()
+
+	// check if node exist
+	if self.view[nid] == 1 {
+		self.vid++
+		self.view[nid] = 0
+	}
+}
+
 
 // function to operate on cntReq
 func (self *ServerView) getCntReq() int {
@@ -117,5 +153,4 @@ func (self *ServerView) updateView() error {
 	fmt.Println("updating view")
 	return nil
 }
-
 
