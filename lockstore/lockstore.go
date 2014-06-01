@@ -158,8 +158,9 @@ func (self *LockStore) nextlog() uint64{
 
 //The 2PC implementation
 func (self *LockStore) twophasecommit(log common.Log) bool {
-	_, peers := self.srvView.GetView()
+	vid, peers := self.srvView.GetView()
 	rep := make(chan bool, len(peers))
+	log.VID = vid
 	//if any peers in the current view fails, a view change request will be issued
 	bad := false
 	// Phase one, broadcast the log to every nodes in current view
@@ -221,7 +222,6 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 
 func (self *LockStore) appendQueue(qname, item string) bool {
 	log := common.Log{
-		VID: self.srvView.VID,
 		SN: self.nextlog(),
 		Op:       "append",
 		Phase:    "prepare",
@@ -233,7 +233,6 @@ func (self *LockStore) appendQueue(qname, item string) bool {
 
 func (self *LockStore) popQueue(qname, item string) bool {
 	log := common.Log{
-		VID: self.srvView.VID,
 		SN: self.nextlog(),
 		Op:       "pop",
 		Phase:    "prepare",
