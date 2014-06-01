@@ -185,9 +185,17 @@ func (self *ServerView) updateView() error {
 
 	self.SetState(common.SrvUpdating)
 
-	self.paxosMgr.updateView()
-	//self.paxosPrepare()
+	// updateview
+	_, info := self.paxosMgr.updateView()
+	for ;info == common.PaxosRestart;  {
+		// info is restart, then do again
+		_, info = self.paxosMgr.updateView()
+	}
+	if info != common.PaxosSuccess {
+		fmt.Println("serverview update fail")
+	}
 
+	//self.SetMasterId(mid)
 	self.SetState(common.SrvReady)
 	return nil
 }

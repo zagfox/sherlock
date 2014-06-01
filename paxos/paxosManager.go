@@ -92,17 +92,24 @@ func (self *PaxosManager) DelNode(nid int) {
  * send phase1
  * send phase2
  * send phase3
- *return master id, error
+ *return info
  */
-func (self *PaxosManager) updateView() (int, error) {
-	self.prepare()
-	return 0, nil
+func (self *PaxosManager) updateView() (int, string) {
+	var mid  int
+	var info string
+
+	info = self.prepare()
+	if info != common.PaxosSuccess {
+		return -1, info
+	}
+	return mid, common.PaxosSuccess
 }
 
 // phase1, paxos prepare
 // my_n = max(n_h, my_n) + 1
 // send prepare_request(my_n, vid+1) to nodes in ?
-func (self *PaxosManager) prepare() {
+// return prepare_state
+func (self *PaxosManager) prepare() string {
 	var ctnt, reply common.Content
 
 	vid, view := self.GetView()
@@ -122,8 +129,15 @@ func (self *PaxosManager) prepare() {
 		}
 		reply_pb := StringToPaxos(reply.Body)
 		if reply_pb.Action == "oldview" {
+			// believe it and restart paxos
 			self.SetView(reply_pb.VID, reply_pb.View)
+			return common.PaxosRestart
+		} else if reply_pb.Action == "reject" {
+			// restart paxos
+			return common.PaxosRestart
 		}
+
 	}
 
+	return "success"
 }
