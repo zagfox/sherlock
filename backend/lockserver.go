@@ -107,16 +107,4 @@ func (self *LockServer) startMsgListener() {
 
 // Thread that reply log
 func (self *LockServer) startLogPlayer() {
-	for {
-	/*
-		msg := common.Content{"come on", "msg from log player"}
-			var reply common.Content
-
-			srv := self.srvs[3]
-		    srv.Msg(msg, &reply)
-	*/
-
-
-		time.Sleep(time.Second)
-	}
 }

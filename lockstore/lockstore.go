@@ -5,9 +5,9 @@ import (
 	"fmt"
 	//"errors"
 	"container/list"
-	//"sync"
-	"strconv"
+	"sync"
 	"encoding/json"
+	"strconv"
 
 	"sherlock/common"
 	"sherlock/message"
@@ -25,6 +25,9 @@ type LockStore struct {
 
 	//data store for log and lock map queue
 	ds *DataStore
+
+	logcount uint64
+	lock sync.Mutex
 }
 
 func NewLockStore(srvView *ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
@@ -114,7 +117,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	if q.Front().Value.(string) == uname {
 		//TODO, use two pc
 		reply.Head = "LockReleased"
-		self.popQueue(lname)
+		self.popQueue(lname, uname)
 
 		// Notify other user
 		self.updateRelease(lu.Lockname)
@@ -146,24 +149,98 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 	return self.ds.GetQueue(lname)
 }
 
-func (self *LockStore) appendQueue(qname, item string) bool {
-	//TODO: use 2PC
-	/*
-		// check if msg is functioning
-		msg := common.Content{"come on", "msg from lockstore"}
-		var reply common.Content
-
-		fmt.Println("in lstore", len(self.srvs))
-		srv := self.srvs[2]
-		srv.Msg(msg, &reply)
-	*/
-
-	return self.ds.AppendQueue(qname, item)
+func (self *LockStore) nextlog() uint64{
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	self.logcount++
+	return self.logcount
 }
 
-func (self *LockStore) popQueue(qname string) (string, bool) {
-	//TODO: use 2PC
-	return self.ds.PopQueue(qname)
+//The 2PC implementation
+func (self *LockStore) twophasecommit(log common.Log) bool {
+	_, peers := self.srvView.GetView()
+	rep := make(chan bool, len(peers))
+	//if any peers in the current view fails, a view change request will be issued
+	bad := false
+	// Phase one, broadcast the log to every nodes in current view
+	// IF any node fails, updateview will redo after that
+	for _, idx := range peers {
+		go func(idx int) {
+			msg := common.Content{Head: "2pc", Body: log.ToString()}
+			reply := common.Content{}
+			if self.srvs[idx].Msg(msg, &reply) != nil {
+				bad = true
+				rep <- true
+				return
+			}
+			replog := common.ParseString(reply.Body)
+			rep <- replog.OK
+		}(idx)
+	}
+	commit := true
+	//Decide whether to commit or not
+	for i := 0; i < len(peers); i++ {
+		if <-rep == false {
+			commit = false
+		}
+	}
+	//Any node fails, update view
+	if bad {
+		go self.srvView.RequestUpdateView()
+		return false
+	}
+	if commit {
+		log.Phase = "commit"
+	} else {
+		log.Phase = "abort"
+	}
+	//Phase two, broadcast the log to all nodes
+	for _, idx := range peers {
+		go func(idx int) {
+			msg := common.Content{Head: "2pc", Body: log.ToString()}
+			reply := common.Content{}
+			if self.srvs[idx].Msg(msg, &reply) != nil {
+				bad = true
+				rep <- false
+				return
+			}
+			replog := common.ParseString(reply.Body)
+			rep <- replog.OK
+		}(idx)
+	}
+	for i := 0; i < len(peers); i++ {
+		<-rep
+	}
+	//Any node fails, request to update view
+	if bad {
+		go self.srvView.RequestUpdateView()
+		return true
+	}
+	return true
+}
+
+func (self *LockStore) appendQueue(qname, item string) bool {
+	log := common.Log{
+		VID: self.srvView.VID,
+		SN: self.nextlog(),
+		Op:       "append",
+		Phase:    "prepare",
+		LockName: qname,
+		UserName: item,
+	}
+	return self.twophasecommit(log)
+}
+
+func (self *LockStore) popQueue(qname, item string) bool {
+	log := common.Log{
+		VID: self.srvView.VID,
+		SN: self.nextlog(),
+		Op:       "pop",
+		Phase:    "prepare",
+		LockName: qname,
+		UserName: item,
+	}
+	return self.twophasecommit(log)
 }
 
 func (self *LockStore) updateRelease(lname string) error {

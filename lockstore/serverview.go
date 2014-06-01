@@ -6,11 +6,15 @@ import (
 )
 
 type ServerView struct {
-	Id      int           //self id
-	mid     int           //master server id
+	Id      int //self id
+	mid     int //master server id
 	midLock sync.Mutex
 
-	state     string      //indicate if server state: updateview, transdata, ready
+	vid   int   // id for view
+	view  []int // members in current view
+	vlock sync.Mutex
+
+	state     string //indicate if server state: updateview, transdata, ready
 	lockState sync.Mutex
 }
 
@@ -34,6 +38,22 @@ func (self *ServerView) GetMasterId() int {
 	defer self.midLock.Unlock()
 
 	return self.mid
+}
+
+// Get vid and view member
+func (self *ServerView) GetView() (int, []int) {
+	self.vlock.Lock()
+	defer self.vlock.Unlock()
+
+	return self.vid, self.view
+}
+
+func (self *ServerView) SetView(vid int, view []int) {
+	self.vlock.Lock()
+	defer self.vlock.Unlock()
+
+	self.vid = vid
+	self.view = view
 }
 
 // function to set lockserver state
