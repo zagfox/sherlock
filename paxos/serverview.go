@@ -3,6 +3,7 @@ package paxos
 import (
 	"fmt"
 	"sync"
+	"time"
 	"errors"
 	"sherlock/common"
 )
@@ -15,11 +16,6 @@ type ServerView struct {
 	mid     int           //master server id
 	midLock sync.Mutex
 
-	/*vid    int            // id for view
-	view   []int          // members in current view, 0 means not in, 1 means in view
-	vlock sync.Mutex
-	*/
-
 	cntReq int            // number of request for uptate
 	cntLock sync.Mutex
 
@@ -30,10 +26,6 @@ type ServerView struct {
 
 	//paxos related variable
 	paxosMgr *PaxosManager
-	/*n_a, v_a int
-	n_h      int
-	my_n     int
-	*/
 }
 
 func NewServerView(Id, Num, mid int, state string, srvs []common.MessageIf) *ServerView {
@@ -46,13 +38,10 @@ func NewServerView(Id, Num, mid int, state string, srvs []common.MessageIf) *Ser
 	paxosMgr := NewPaxosManager(Id, Num, srvs)
 	return &ServerView {
 		Id: Id, Num: Num,
-		//mid: mid,
-		//vid: 0, view: view,
+		mid: mid,
 		state: state,
 		srvs: srvs,
 		paxosMgr: paxosMgr,
-		//n_a: 0, v_a: 0,
-		//n_h: 0, my_n: 0,
 	}
 }
 
@@ -73,59 +62,19 @@ func (self *ServerView) GetMasterId() int {
 
 // Get vid and view member
 func (self *ServerView) GetView() (int, []int) {
-	/*self.vlock.Lock()
-	defer self.vlock.Unlock()
-
-	ret := make([]int, 0)
-	for i, v := range(self.view) {
-		if v == 1 {
-			ret = append(ret, i)
-		}
-	}
-
-	return self.vid, ret
-	*/
 	return self.paxosMgr.GetView()
 }
 
 // Set vid and view number
 func (self *ServerView) SetView(vid int, view []int) {
-	/*self.vlock.Lock()
-	defer self.vlock.Unlock()
-
-	self.vid = vid
-	for i, _ := range(self.view) {
-		self.view[i] = 0
-	}
-	for _, v := range(view) {
-		self.view[v] = 1
-	}*/
 	self.paxosMgr.SetView(vid, view)
 }
 
 func (self *ServerView) AddNode(nid int) {
-	/*
-	self.vlock.Lock()
-	defer self.vlock.Unlock()
-
-	// check if node exist
-	if self.view[nid] == 0 {
-		self.vid++
-		self.view[nid] = 1
-	}*/
 	self.paxosMgr.AddNode(nid)
 }
 
 func (self *ServerView) DelNode(nid int) {
-	/*
-	self.vlock.Lock()
-	defer self.vlock.Unlock()
-
-	// check if node exist
-	if self.view[nid] == 1 {
-		self.vid++
-		self.view[nid] = 0
-	}*/
 	self.paxosMgr.DelNode(nid)
 }
 
@@ -145,6 +94,20 @@ func (self *ServerView) setCntReq(cntReq int) {
 	self.cntReq = cntReq
 }
 */
+
+// function to get accepted value
+func (self *ServerView) GetAcceptedValue() (common.ProposalNumPair, int) {
+	return self.paxosMgr.GetAcceptedValue()
+}
+
+// function to get highest value
+func (self *ServerView) GetHighestNumPair() (common.ProposalNumPair) {
+	return self.paxosMgr.GetHighestNumPair()
+}
+
+func (self *ServerView) SetHighestNumPair(np_h common.ProposalNumPair) {
+    self.paxosMgr.SetHighestNumPair(np_h)
+}
 
 // function to set lockserver state
 func (self *ServerView) GetState() string {
@@ -189,6 +152,8 @@ func (self *ServerView) updateView() error {
 	_, info := self.paxosMgr.updateView()
 	for ;info == common.PaxosRestart;  {
 		// info is restart, then do again
+		fmt.Println("get something, restart paxos in 1s")
+		time.Sleep(1000*time.Millisecond)
 		_, info = self.paxosMgr.updateView()
 	}
 	if info != common.PaxosSuccess {
@@ -200,32 +165,3 @@ func (self *ServerView) updateView() error {
 	return nil
 }
 
-/*
-// phase1, paxos prepare
-// my_n = max(n_h, my_n) + 1
-// send prepare_request(my_n, vid+1) to nodes in ?
-func (self *ServerView) paxosPrepare() {
-	var ctnt, reply common.Content
-
-	vid, view := self.GetView()
-	ctnt.Head = "paxos"
-
-	ctnt.Body = PaxosToString(common.PaxosBody{
-		Phase: "prepare", Action:"request",
-		ProposerId: self.Id,
-		ProposalNum: int(math.Max(float64(self.my_n), float64(vid)))+1,
-		ProposalValue: -1,
-		VID: vid+1,View: nil})
-	for _, v := range(view) {
-		e := self.srvs[v].Msg(ctnt, &reply)
-		if e != nil {
-			// error during paxos
-			// Plan to restart
-		}
-		reply_pb := StringToPaxos(reply.Body)
-		if reply_pb.Action == "oldview" {
-			self.SetView(reply_pb.VID, reply_pb.View)
-		}
-	}
-
-}*/

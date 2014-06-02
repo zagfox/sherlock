@@ -17,9 +17,13 @@ type PaxosManager struct {
 	srvs []common.MessageIf //interface to talk to other server
 
 	//paxos related variable
-	n_a, v_a int
-	n_h      int
-	my_n     int
+	//n_a, id_a, v_a int  // last accepted proposal n, v
+	np_a      common.ProposalNumPair
+	v_a       int  // last accepted proposal n, v
+	//n_h, id_h      int  // highest n seen in progress
+	np_h      common.ProposalNumPair  // highest n seen in progress
+	//my_n      int
+	my_np	  common.ProposalNumPair
 }
 
 func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
@@ -33,8 +37,9 @@ func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
 		//view related
 		vid: 0, view: view,
 		srvs: srvs,
-		n_a:  0, v_a: 0,
-		n_h: 0, my_n: 0,
+		np_a:  common.ProposalNumPair{-1, -1}, v_a: 0,
+		np_h: common.ProposalNumPair{-1, -1},
+		my_np: common.ProposalNumPair{-1, -1},
 	}
 }
 
@@ -88,6 +93,20 @@ func (self *PaxosManager) DelNode(nid int) {
 	}
 }
 
+// function to get accepted value
+func (self *PaxosManager) GetAcceptedValue() (common.ProposalNumPair, int) {
+	return self.np_a, self.v_a
+}
+
+// function to get highest value
+func (self *PaxosManager) GetHighestNumPair() (common.ProposalNumPair) {
+    return self.np_h
+}
+
+func (self *PaxosManager) SetHighestNumPair(np_h common.ProposalNumPair) {
+	self.np_h = np_h
+}
+
 /*
  * send phase1
  * send phase2
@@ -115,12 +134,21 @@ func (self *PaxosManager) prepare() string {
 	vid, view := self.GetView()
 	ctnt.Head = "paxos"
 
+	ProNum := int(math.Max(float64(self.my_np.ProposalNum), float64(vid))) + 1
 	ctnt.Body = PaxosToString(common.PaxosBody{
 		Phase: "prepare", Action: "request",
-		ProposerId:    self.Id,
-		ProposalNum:   int(math.Max(float64(self.my_n), float64(vid))) + 1,
-		ProposalValue: -1,
-		VID:           vid + 1, View: nil})
+		//ProposerId:    self.Id,
+		//ProposalNum:   int(math.Max(float64(self.my_np.ProposalNum), float64(vid))) + 1,
+		ProNumPair:      common.ProposalNumPair{ProNum, self.Id},
+		ProValue:   -1,
+		VID:             vid + 1, View: nil})
+
+	// record returned value
+	/*
+	n_tmp := -1
+	id_tmp := -1
+	v_tmp := -1
+	*/
 	for _, v := range view {
 		e := self.srvs[v].Msg(ctnt, &reply)
 		if e != nil {
@@ -135,6 +163,9 @@ func (self *PaxosManager) prepare() string {
 		} else if reply_pb.Action == "reject" {
 			// restart paxos
 			return common.PaxosRestart
+		} else if reply_pb.Action == "ok" {
+		} else {
+			// don't know what's gotten
 		}
 
 	}

@@ -33,18 +33,52 @@ func (self *PaxosMsgHandler) Handle(ctnt common.Content, reply *common.Content) 
 
 // handle phase1
 func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Content) error {
-	_, view := self.srvView.GetView()
-	//if pb.VID <= vid {
-	reply.Head = "paxos"
-	reply.Body = PaxosToString(common.PaxosBody{
-		Phase: "prepare", Action: "oldview",
-		ProposerId:    -1,
-		ProposalNum:   -1,
-		ProposalValue: -1,
-		VID:           -1, View: view})
-	return nil
-	//}
-	//return nil
+	// first check if it is old view
+	vid, view := self.srvView.GetView()
+	if pb.VID <= vid {
+		reply.Head = "paxos"
+		reply.Body = PaxosToString(common.PaxosBody{
+			Phase: "prepare", Action: "oldview",
+			//ProposerId:    -1,
+			//ProposalNum:   -1,
+			ProNumPair:    common.ProposalNumPair{-1, -1},
+			ProValue:      -1,
+			VID:           -1, View: view})
+		return nil
+	}
+
+	// then check if n is bigger than n_h
+	np_a, v_a := self.srvView.GetAcceptedValue()
+	np_h := self.srvView.GetHighestNumPair()
+	if pb.ProNumPair.BiggerThan(np_h) {
+		// set self state to be updating
+		self.srvView.SetState(common.SrvUpdating)
+
+		// set n_h
+		self.srvView.SetHighestNumPair(pb.ProNumPair)
+
+		// reply it with prepare ok
+		reply.Head = "paxos"
+		reply.Body = PaxosToString(common.PaxosBody{
+			Phase: "prepare", Action: "ok",
+			//ProposerId:    id_a,
+			//ProposalNum:   n_a,
+			ProNumPair:     np_a,
+			ProValue:       v_a,
+			VID:            -1, View: nil})
+		return nil
+	} else {
+		// reject
+		reply.Head = "paxos"
+		reply.Body = PaxosToString(common.PaxosBody{
+			Phase: "prepare", Action: "reject",
+			//ProposerId:    -1,
+			//ProposalNum:   -1,
+			ProNumPair:    common.ProposalNumPair{-1, -1},
+			ProValue:      -1,
+			VID:           -1, View: nil})
+		return nil
+	}
 }
 
 // handle phase2
