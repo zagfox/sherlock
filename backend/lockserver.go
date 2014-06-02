@@ -148,14 +148,22 @@ func (self *LockServer) startHeartBeat() {
 		for i, srv := range self.srvs {
 			e := srv.Msg(ctnt, &reply)
 			if e != nil {
-				needUpdate = true
-				self.srvView.DelNode(i)
+				if self.srvView.NodeInView(i) {
+					needUpdate = true
+					self.srvView.DelNode(i)
+				}
+			} else {
+				if !self.srvView.NodeInView(i) {
+					needUpdate = true
+					self.srvView.AddNode(i)
+				}
 			}
 		}
 		if needUpdate {
 			vid, view := self.srvView.GetView()
-			fmt.Println("request update view-> vid =", vid, " view =", view)
+			fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
 			self.srvView.RequestUpdateView()
+			fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
 		}
 		time.Sleep(time.Second)
 	}

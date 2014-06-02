@@ -1,28 +1,28 @@
 package paxos
 
 import (
+	"errors"
 	"fmt"
+	"sherlock/common"
 	"sync"
 	"time"
-	"errors"
-	"sherlock/common"
 )
 
 // ServerView, used to maintain view group and info
 type ServerView struct {
-	Id      int           //self id
-	Num  int           // total lock server number
+	Id  int //self id
+	Num int // total lock server number
 
-	mid     int           //master server id
+	mid     int //master server id
 	midLock sync.Mutex
 
-	cntReq int            // number of request for uptate
+	cntReq  int // number of request for uptate
 	cntLock sync.Mutex
 
-	state     string      //indicate if server state: updateview, transdata, ready
+	state     string //indicate if server state: updateview, transdata, ready
 	lockState sync.Mutex
 
-	srvs     []common.MessageIf  //interface to talk to other server
+	srvs []common.MessageIf //interface to talk to other server
 
 	//paxos related variable
 	paxosMgr *PaxosManager
@@ -36,11 +36,11 @@ func NewServerView(Id, Num, mid int, state string, srvs []common.MessageIf) *Ser
 	}
 
 	paxosMgr := NewPaxosManager(Id, Num, srvs)
-	return &ServerView {
+	return &ServerView{
 		Id: Id, Num: Num,
-		mid: mid,
-		state: state,
-		srvs: srvs,
+		mid:      mid,
+		state:    state,
+		srvs:     srvs,
 		paxosMgr: paxosMgr,
 	}
 }
@@ -70,6 +70,12 @@ func (self *ServerView) SetView(vid int, view []int) {
 	self.paxosMgr.SetView(vid, view)
 }
 
+// check if Node in View
+func (self *ServerView) NodeInView(nid int) bool {
+	return self.paxosMgr.NodeInView(nid)
+}
+
+// Change Node in View
 func (self *ServerView) AddNode(nid int) {
 	self.paxosMgr.AddNode(nid)
 }
@@ -78,7 +84,6 @@ func (self *ServerView) DelNode(nid int) {
 	self.paxosMgr.DelNode(nid)
 }
 
-/*
 // function to operate on cntReq
 func (self *ServerView) getCntReq() int {
 	self.cntLock.Lock()
@@ -93,7 +98,6 @@ func (self *ServerView) setCntReq(cntReq int) {
 
 	self.cntReq = cntReq
 }
-*/
 
 // function to get accepted value
 func (self *ServerView) GetAcceptedValue() (common.ProposalNumPair, int) {
@@ -105,12 +109,12 @@ func (self *ServerView) SetAcceptedValue(np_a common.ProposalNumPair, v_a int) {
 }
 
 // function to get highest value
-func (self *ServerView) GetHighestNumPair() (common.ProposalNumPair) {
+func (self *ServerView) GetHighestNumPair() common.ProposalNumPair {
 	return self.paxosMgr.GetHighestNumPair()
 }
 
 func (self *ServerView) SetHighestNumPair(np_h common.ProposalNumPair) {
-    self.paxosMgr.SetHighestNumPair(np_h)
+	self.paxosMgr.SetHighestNumPair(np_h)
 }
 
 // function to set lockserver state
@@ -128,13 +132,13 @@ func (self *ServerView) SetState(state string) {
 
 // request to update view
 func (self *ServerView) RequestUpdateView() error {
-	self.cntLock.Lock()
-	defer self.cntLock.Unlock()
 
-	cntReq := self.cntReq
+	cntReq := self.getCntReq()
 	if cntReq == 0 {
-		self.cntReq++
-		return self.updateView()
+		self.setCntReq(cntReq+1)
+		self.updateView()
+		self.setCntReq(0)
+		return nil
 	} else {
 		return errors.New("already updating")
 	}
@@ -148,24 +152,23 @@ func (self *ServerView) RequestUpdateView() error {
  * set self state back
  */
 func (self *ServerView) updateView() error {
-	fmt.Println("updating view")
+	fmt.Println(self.Id, "updating view")
 
 	self.SetState(common.SrvUpdating)
 
 	// updateview
 	_, info := self.paxosMgr.updateView()
-	for ;info == common.PaxosRestart;  {
-		// info is restart, then do again
-		fmt.Println("get something, restart paxos in 1s")
-		time.Sleep(1000*time.Millisecond)
+	for info == common.PaxosRestart {
+		// if info is restart, then do again
+		fmt.Println(self.Id, "get something, restart paxos in 1s")
+		time.Sleep(1000 * time.Millisecond)
 		_, info = self.paxosMgr.updateView()
 	}
 	if info != common.PaxosSuccess {
-		fmt.Println("serverview update fail")
+		fmt.Println(self.Id, "serverview update fail")
 	}
 
 	//self.SetMasterId(mid)
 	self.SetState(common.SrvReady)
 	return nil
 }
-

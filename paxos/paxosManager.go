@@ -73,6 +73,20 @@ func (self *PaxosManager) SetView(vid int, view []int) {
 	}
 }
 
+func (self *PaxosManager) NodeInView(nid int) bool {
+	self.vlock.Lock()
+	defer self.vlock.Unlock()
+
+	if nid >= len(self.view) || nid < 0{
+		return false
+	}
+
+	if self.view[nid] == 1 {
+		return true
+	} else {
+		return false
+	}
+}
 func (self *PaxosManager) AddNode(nid int) {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
@@ -129,14 +143,24 @@ func (self *PaxosManager) updateView() (int, string) {
 	if info != common.PaxosSuccess {
 		return -1, info
 	}
-	fmt.Println("paxos prepare success")
+	fmt.Println("paxos", self.Id, "->prepare success")
 
 	// accept phase
 	info = self.phaseAccept()
 	if info != common.PaxosSuccess {
 		return -1, info
 	}
-	fmt.Println("paxos accept success")
+	fmt.Println("paxos", self.Id, "->accept success")
+
+	// decide phase
+	mid, info = self.phaseDecide()
+	if info != common.PaxosSuccess {
+		return -1, info
+	}
+	fmt.Print("paxos", self.Id, "->decide success! ")
+	fmt.Print("mid = ", mid)
+	vid, view := self.GetView()
+	fmt.Println(" view = ", vid, view)
 
 	return mid, common.PaxosSuccess
 }
@@ -182,12 +206,11 @@ func (self *PaxosManager) phasePrepare() string {
 			return common.PaxosRestart
 
 		} else if reply_pb.Action == "reject" {
-			// restart paxos
-			return common.PaxosRestart
+			//go on
 
 		} else if reply_pb.Action == "ok" {
 			num_tmp++
-			if reply_pb.ProNumPair.BiggerThan(np_tmp) {
+			if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
 				//update np_tmp and v_tmp
 				// also send to itself, so must have value
 				np_tmp = reply_pb.ProNumPair
@@ -249,12 +272,12 @@ func (self *PaxosManager) phaseAccept() string {
 
 		if reply_pb.Action == "oldview" {
 			// believe it and restart paxos
+			//fmt.Println("paxosManager : accept-> old view")
 			self.SetView(reply_pb.VID, reply_pb.View)
 			return common.PaxosRestart
 
 		} else if reply_pb.Action == "reject" {
-			// restart paxos, don't know if it is ok...
-			return common.PaxosRestart
+			// go on
 
 		} else if reply_pb.Action == "ok" {
 			// record reply num
@@ -265,14 +288,64 @@ func (self *PaxosManager) phaseAccept() string {
 		}
 	}
 
+	//fmt.Println(num_tmp)
+	//fmt.Println(len(view)/2)
 	//if majority reply, prepare success
 	if num_tmp > len(view)/2 {
 		return common.PaxosSuccess
 	}
 
+	//fmt.Println("paxosManager : accept-> not enough reply")
 	return common.PaxosFailure
 }
 
 
 
+// phase3, paxos decide
+// 1. send (vid+1, view, value) to all in view
+// return value, info
+func (self *PaxosManager) phaseDecide() (int, string) {
+	var ctnt, reply common.Content
+
+	// get current view
+	vid, view := self.GetView()
+
+	// generate message (my_n, vid+1, value)
+	ctnt.Head = "paxos"
+	ctnt.Body = PaxosToString(common.PaxosBody{
+		Phase: "decide", Action: "request",
+		ProNumPair:      common.ProposalNumPair{},
+		ProValue:        self.v_a,
+		VID:             vid + 1, View: view})
+
+	//send pprepare to everyone
+	for _, v := range view {
+		e := self.srvs[v].Msg(ctnt, &reply)
+		if e != nil {
+			// error during paxos
+			// Plan: return failure
+			return -1, common.PaxosFailure
+		}
+		reply_pb := StringToPaxos(reply.Body)
+
+		if reply_pb.Action == "oldview" {
+			// believe it and restart paxos
+			self.SetView(reply_pb.VID, reply_pb.View)
+			return -1, common.PaxosRestart
+
+		} else if reply_pb.Action == "reject" {
+			// go on
+
+		} else if reply_pb.Action == "ok" {
+			// nothing special here
+
+		} else {
+			// don't know what's gotten
+			return -1, common.PaxosFailure
+		}
+	}
+
+	// decide phase always success
+	 return self.v_a, common.PaxosSuccess
+}
 
