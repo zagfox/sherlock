@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"fmt"
+	//"fmt"
 	"sherlock/common"
 	"sherlock/paxos"
 )
@@ -20,7 +20,7 @@ func NewServerMsgHandler(srvView *paxos.ServerView) common.MsgHandlerIf {
 
 func (self *ServerMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	// Examine the content
-	fmt.Println("in serverMsgHandler", ctnt)
+	//fmt.Println("in serverMsgHandler", ctnt)
 	switch ctnt.Head {
 	case "2pc":
 		return self.handle2pc.Handle(ctnt, reply)

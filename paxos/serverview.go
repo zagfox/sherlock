@@ -100,6 +100,10 @@ func (self *ServerView) GetAcceptedValue() (common.ProposalNumPair, int) {
 	return self.paxosMgr.GetAcceptedValue()
 }
 
+func (self *ServerView) SetAcceptedValue(np_a common.ProposalNumPair, v_a int) {
+	self.paxosMgr.SetAcceptedValue(np_a, v_a)
+}
+
 // function to get highest value
 func (self *ServerView) GetHighestNumPair() (common.ProposalNumPair) {
 	return self.paxosMgr.GetHighestNumPair()

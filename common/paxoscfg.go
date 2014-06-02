@@ -16,3 +16,4 @@ func (self *ProposalNumPair) SmallerThan(np ProposalNumPair) bool {
 // define paxos return value
 var PaxosRestart = "restart"
 var PaxosSuccess = "success"
+var PaxosFailure = "failure"
