@@ -76,12 +76,12 @@ func (self *ServerView) NodeInView(nid int) bool {
 }
 
 // Change Node in View
-func (self *ServerView) AddNode(nid int) {
-	self.paxosMgr.AddNode(nid)
+func (self *ServerView) RequestAddNode(nid int) {
+	self.paxosMgr.RequestAddNode(nid)
 }
 
-func (self *ServerView) DelNode(nid int) {
-	self.paxosMgr.DelNode(nid)
+func (self *ServerView) RequestDelNode(nid int) {
+	self.paxosMgr.RequestDelNode(nid)
 }
 
 // function to operate on cntReq
@@ -152,7 +152,7 @@ func (self *ServerView) RequestUpdateView() error {
  * set self state back
  */
 func (self *ServerView) updateView() error {
-	fmt.Println(self.Id, "updating view")
+	//fmt.Println(self.Id, "updating view")
 
 	self.SetState(common.SrvUpdating)
 
@@ -160,12 +160,12 @@ func (self *ServerView) updateView() error {
 	_, info := self.paxosMgr.updateView()
 	for info == common.PaxosRestart {
 		// if info is restart, then do again
-		fmt.Println(self.Id, "get something, restart paxos in 1s")
+		fmt.Println(self.Id, "get restart info, restart paxos in 1s")
 		time.Sleep(1000 * time.Millisecond)
 		_, info = self.paxosMgr.updateView()
 	}
 	if info != common.PaxosSuccess {
-		fmt.Println(self.Id, "serverview update fail")
+		fmt.Println("serverview", self.Id, "update fail")
 	}
 
 	//self.SetMasterId(mid)
