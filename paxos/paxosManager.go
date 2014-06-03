@@ -35,10 +35,8 @@ type PaxosManager struct {
 
 func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
 	view := make([]int, Num)
-	//next_view := make([]int, Num)
 	for i := 0; i < Num; i++ {
 		view[i] = 1
-		//next_view[i] = 1
 	}
 	return &PaxosManager{
 		Id: Id, Num: Num,
@@ -46,7 +44,7 @@ func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
 		//view related
 		vid: 0, view: view,
 		srvs: srvs,
-		np_a:  common.ProposalNumPair{-1, -1}, v_a: 0,
+		np_a:  common.ProposalNumPair{-1, -1}, v_a: -1,
 		np_h: common.ProposalNumPair{-1, -1},
 		my_np: common.ProposalNumPair{-1, -1},
 
@@ -55,12 +53,25 @@ func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
 	}
 }
 
+// reset paxos state for restart
+func (self *PaxosManager) Reset() {
+	view := make([]int, 0)
+	for i := 0; i < self.Num; i++ {
+		view = append(view, i)
+	}
+
+	//self.SetView(0, view)  //view remain, cause it may learn from others
+	self.SetAcceptedValue(common.ProposalNumPair{-1, -1}, -1)
+	self.SetHighestNumPair(common.ProposalNumPair{-1, -1})
+}
+
 func (self *PaxosManager) Logln(str string) {
 	if self.logging == true {
 		fmt.Println("PaxosManager", self.Id, ">", str);
 	}
 }
 
+// Get/Set vid and view number
 func (self *PaxosManager) GetView() (int, []int) {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
@@ -75,7 +86,6 @@ func (self *PaxosManager) GetView() (int, []int) {
 	return self.vid, ret
 }
 
-// Set vid and view number
 func (self *PaxosManager) SetView(vid int, view []int) {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
@@ -119,6 +129,7 @@ func (self *PaxosManager) NodesInView(nodes []int) int {
 	return num
 }
 
+// Deprecated
 // add/delete node in next view
 func (self *PaxosManager) RequestAddNode(nid int) {
 	self.nvlock.Lock()
@@ -165,15 +176,16 @@ func (self *PaxosManager) SetHighestNumPair(np_h common.ProposalNumPair) {
 }
 
 /*
- * send phase1
- * send phase2
- * send phase3
+ * send phase1: prepare
+ * send phase2: accept
+ * send phase3: decide
  * return mid, info
  */
 func (self *PaxosManager) updateView() (int, string) {
 	var mid  int
 	var info string
 
+	self.Logln("->begin update")
 	// prepare phase
 	info = self.phasePrepare()
 	if info != common.PaxosSuccess {
@@ -223,19 +235,20 @@ func (self *PaxosManager) phasePrepare() string {
 		VID:             vid + 1, View: nil})
 
 	// record returned value
-	//num_tmp := 0 //the response get
 	np_tmp := common.ProposalNumPair{-1, -1}  //temp highest n
 	v_tmp := -1          // value corresponding to np_tmp
 	responders := make([]int, 0)    // keep record to responders
 
+	//self.Logln("phasePrepare, sending all messeges")
 	//send pprepare to everyone
-	ch_finish := make(chan string, len(view))
+	ch_finish := make(chan string, self.Num)
 	for v := 0; v < self.Num; v++ {
 		e := self.srvs[v].Msg(ctnt, &reply[v])
 		if e != nil {
 			// network error during paxos
 			// Plan: go on
 		}
+		//fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -257,7 +270,6 @@ func (self *PaxosManager) phasePrepare() string {
 			//go on
 
 		} else if reply_pb.Action == "ok" {
-			//num_tmp++
 			responders = append(responders, v)
 			if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
 				//update np_tmp and v_tmp
@@ -274,13 +286,13 @@ func (self *PaxosManager) phasePrepare() string {
 	}
 
 	//if majority reply, prepare success
-	//if num_tmp > len(view)/2 {
 	if self.NodesInView(responders) > len(view)/2 {
 		// set value and return success
 		// should be right, though a little different from lecture nodes
 		// because it would always send to self
-		if v_tmp == -1 {
-			//if no one reply for value, select self to be master
+		if v_tmp == -1 || !self.NodeInView(v_tmp) {
+			//if no one has valid reply for value, select self to be master
+			np_tmp = self.my_np
 			v_tmp = self.Id
 		}
 		self.SetAcceptedValue(np_tmp, v_tmp)
@@ -314,7 +326,7 @@ func (self *PaxosManager) phaseAccept() string {
 	responders := make([]int, 0)    // keep record to responders
 
 	//send pprepare to everyone
-	ch_finish := make(chan string, len(view))
+	ch_finish := make(chan string, self.Num)
 	for v := 0; v < self.Num; v++ {
 		e := self.srvs[v].Msg(ctnt, &reply[v])
 		if e != nil {
@@ -387,8 +399,8 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 		VID:             vid + 1, View: self.responders})
 
 	//send pprepare to everyone
-	ch_finish := make(chan string, len(view))
-	for _, v := range view {
+	ch_finish := make(chan string, self.Num) //len(view))
+	for v := 0; v < self.Num; v++ {
 		e := self.srvs[v].Msg(ctnt, &reply[v])
 		if e != nil {
 			// error during paxos
@@ -398,12 +410,12 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 	}
 
 	// wait for all response
-	for _,_ = range view {
+	for v := 0; v < self.Num; v++ {
 		<-ch_finish
 	}
 
 	// get response from every one
-	for _, v := range view {
+	for v := 0; v < self.Num; v++ {
 		reply_pb := StringToPaxos(reply[v].Body)
 
 		if reply_pb.Action == "oldview" {

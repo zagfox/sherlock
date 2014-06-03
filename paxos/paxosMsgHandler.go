@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	//"fmt"
+	"fmt"
 	"sherlock/common"
 )
 
@@ -130,8 +130,9 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 		return nil
 	}
 
-	//fmt.Println("paxosHandler", self.srvView.Id, "handle decide", pb.VID, pb.View)
-	// set self vid and view, state
+	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =",pb.ProValue, "view=", pb.VID, pb.View)
+	// set self mid, vid and view, state
+	self.srvView.SetMasterId(pb.ProValue)
 	self.srvView.SetView(pb.VID, pb.View)
 	self.srvView.SetState(common.SrvReady)
 

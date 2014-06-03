@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"strconv"
 	//"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
@@ -80,9 +81,9 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	lu.Username = self.laddr
 
 	// find a machine that could be connected 
-	mid := self.getMid()
-	err := self.clts[mid].Acquire(lu, reply)
-	for ; err != nil;  {
+	var mid int
+	var err error
+	for {
 		mid = self.getMid()
 		err = self.clts[mid].Acquire(lu, reply)
 
@@ -92,10 +93,15 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		}
 
 		if reply.Head == "NotReady" {
-			fmt.Println("NotReady")
 			time.Sleep(time.Second)
 			continue
 		}
+		if reply.Head == "NotMaster" {
+			mid, _ = strconv.Atoi(reply.Body)
+			self.setMid(mid)
+			continue
+		}
+
 		break
 	}
 
@@ -118,12 +124,28 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 	lu.Username = self.laddr
 
 	// find a machine that could be connected 
-	mid := self.getMid()
-	err := self.clts[mid].Release(lu, reply)
-	for ; err != nil; self.setMid(mid+1) {
+	var mid int
+	var err error
+	for {
 		mid = self.getMid()
 		err = self.clts[mid].Release(lu, reply)
-		if err == nil {break}
+
+		if err != nil{
+			self.setMid(mid+1)
+			continue
+		}
+
+		if reply.Head == "NotReady" {
+			time.Sleep(time.Second)
+			continue
+		}
+		if reply.Head == "NotMaster" {
+			mid, _ = strconv.Atoi(reply.Body)
+			self.setMid(mid)
+			continue
+		}
+
+		break
 	}
 
 	// handle reply Head

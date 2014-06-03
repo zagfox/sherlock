@@ -141,6 +141,9 @@ func (self *LockServer) startLogPlayer() {
 }
 
 func (self *LockServer) startHeartBeat() {
+	/*if self.srvView.Id != 0 {
+		return
+	}*/
 	fmt.Println("In heart beat")
 	var ctnt, reply common.Content
 	for {
@@ -160,10 +163,10 @@ func (self *LockServer) startHeartBeat() {
 			}
 		}
 		if needUpdate {
-			vid, view := self.srvView.GetView()
-			fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
+			//vid, view := self.srvView.GetView()
+			//fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
 			self.srvView.RequestUpdateView()
-			fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
+			//fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
 			fmt.Println()
 		}
 		time.Sleep(time.Second)

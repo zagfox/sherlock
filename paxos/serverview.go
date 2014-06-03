@@ -152,8 +152,7 @@ func (self *ServerView) RequestUpdateView() error {
  * set self state back
  */
 func (self *ServerView) updateView() error {
-	//fmt.Println(self.Id, "updating view")
-
+	fmt.Println("serverview", self.Id, "updating view")
 	self.SetState(common.SrvUpdating)
 
 	// updateview
