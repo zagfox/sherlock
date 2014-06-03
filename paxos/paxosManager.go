@@ -18,6 +18,7 @@ type PaxosManager struct {
 
 	next_view []int     // tmp place to place changed view
 	nvlock sync.Mutex
+	responders []int
 
 	srvs []common.MessageIf //interface to talk to other server
 
@@ -34,16 +35,16 @@ type PaxosManager struct {
 
 func NewPaxosManager(Id, Num int, srvs []common.MessageIf) *PaxosManager {
 	view := make([]int, Num)
-	next_view := make([]int, Num)
+	//next_view := make([]int, Num)
 	for i := 0; i < Num; i++ {
 		view[i] = 1
-		next_view[i] = 1
+		//next_view[i] = 1
 	}
 	return &PaxosManager{
 		Id: Id, Num: Num,
 
 		//view related
-		vid: 0, view: view, next_view: next_view,
+		vid: 0, view: view,
 		srvs: srvs,
 		np_a:  common.ProposalNumPair{-1, -1}, v_a: 0,
 		np_h: common.ProposalNumPair{-1, -1},
@@ -88,6 +89,7 @@ func (self *PaxosManager) SetView(vid int, view []int) {
 	}
 }
 
+// check if a node is in view
 func (self *PaxosManager) NodeInView(nid int) bool {
 	self.vlock.Lock()
 	defer self.vlock.Unlock()
@@ -103,26 +105,44 @@ func (self *PaxosManager) NodeInView(nid int) bool {
 	}
 }
 
+
+// check how many nodes are in view
+func (self *PaxosManager) NodesInView(nodes []int) int {
+	num := 0
+
+	for i := 0; i < len(nodes); i++ {
+		if self.NodeInView(nodes[i]) {
+			num++
+		}
+	}
+
+	return num
+}
+
 // add/delete node in next view
 func (self *PaxosManager) RequestAddNode(nid int) {
 	self.nvlock.Lock()
 	defer self.nvlock.Unlock()
 
+/*
 	// check if node exist
 	if self.next_view[nid] == 0 {
 		self.next_view[nid] = 1
 	}
+	*/
 }
 
 func (self *PaxosManager) RequestDelNode(nid int) {
 	self.nvlock.Lock()
 	defer self.nvlock.Unlock()
 
+	/*
 	//self.Logln("requestDelNode" + "nid=" + strconv.FormatInt(int64(nid), 10))
 	// check if node exist
 	if self.next_view[nid] == 1 {
 		self.next_view[nid] = 0
 	}
+	*/
 }
 
 // function to get accepted value
@@ -203,14 +223,14 @@ func (self *PaxosManager) phasePrepare() string {
 		VID:             vid + 1, View: nil})
 
 	// record returned value
-	num_tmp := 0 //the response get
+	//num_tmp := 0 //the response get
 	np_tmp := common.ProposalNumPair{-1, -1}  //temp highest n
 	v_tmp := -1          // value corresponding to np_tmp
-	//view_tmp := make([]int, 0)
+	responders := make([]int, 0)    // keep record to responders
 
 	//send pprepare to everyone
 	ch_finish := make(chan string, len(view))
-	for _, v := range view {
+	for v := 0; v < self.Num; v++ {
 		e := self.srvs[v].Msg(ctnt, &reply[v])
 		if e != nil {
 			// network error during paxos
@@ -220,12 +240,12 @@ func (self *PaxosManager) phasePrepare() string {
 	}
 
 	// wait for all response
-	for _,_ = range view {
+	for v := 0; v < self.Num; v++ {
 		<-ch_finish
 	}
 
 	// get response from every one
-	for _, v := range view {
+	for v := 0; v < self.Num; v++ {
 		reply_pb := StringToPaxos(common.Content(reply[v]).Body)
 
 		if reply_pb.Action == "oldview" {
@@ -237,8 +257,8 @@ func (self *PaxosManager) phasePrepare() string {
 			//go on
 
 		} else if reply_pb.Action == "ok" {
-			num_tmp++
-			//view_tmp = append(view_tmp, v)
+			//num_tmp++
+			responders = append(responders, v)
 			if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
 				//update np_tmp and v_tmp
 				// also send to itself, so must have value
@@ -247,15 +267,15 @@ func (self *PaxosManager) phasePrepare() string {
 			}
 
 		} else {
-			// don't know what's gotten
+			// should be empty, or don't know what's gotten
 			//self.Logln("phasePrepare, don't know what's gotten back")
 			//return common.PaxosFailure
 		}
 	}
 
-	fmt.Println(num_tmp)
 	//if majority reply, prepare success
-	if num_tmp > len(view)/2 {
+	//if num_tmp > len(view)/2 {
+	if self.NodesInView(responders) > len(view)/2 {
 		// set value and return success
 		// should be right, though a little different from lecture nodes
 		// because it would always send to self
@@ -291,10 +311,11 @@ func (self *PaxosManager) phaseAccept() string {
 
 	// record accept ok num
 	num_tmp := 0 //the response get
+	responders := make([]int, 0)    // keep record to responders
 
 	//send pprepare to everyone
 	ch_finish := make(chan string, len(view))
-	for _, v := range view {
+	for v := 0; v < self.Num; v++ {
 		e := self.srvs[v].Msg(ctnt, &reply[v])
 		if e != nil {
 			// error during paxos
@@ -304,12 +325,12 @@ func (self *PaxosManager) phaseAccept() string {
 	}
 
 	// wait for all response
-	for _,_ = range view {
+	for v := 0; v < self.Num; v++ {
 		<-ch_finish
 	}
 
 	// get response from every one
-	for _, v := range view {
+	for v := 0; v < self.Num; v++ {
 		reply_pb := StringToPaxos(reply[v].Body)
 
 		if reply_pb.Action == "oldview" {
@@ -324,16 +345,17 @@ func (self *PaxosManager) phaseAccept() string {
 		} else if reply_pb.Action == "ok" {
 			// record reply num
 			num_tmp++
+			responders = append(responders, v)
 		} else {
 			// don't know what's gotten
 			//return common.PaxosFailure
 		}
 	}
 
-	//fmt.Println(num_tmp)
-	//fmt.Println(len(view)/2)
-	//if majority reply, prepare success
-	if num_tmp > len(view)/2 {
+	//if majority reply, accept success
+	// set self view to be responders
+	if self.NodesInView(responders) > len(view)/2 {
+		self.responders = responders
 		return common.PaxosSuccess
 	}
 
@@ -350,8 +372,10 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 	var ctnt common.Content
 	reply := make([]common.Content, self.Num)
 
+	// the view has been updated to accept responders
 	// get current view
 	vid, view := self.GetView()
+	fmt.Println("PaxosManager", self.Id, "> phaseDecide", vid, view)
 
 	// generate message (my_n, vid+1, value)
 	ctnt.Head = "paxos"
@@ -359,8 +383,8 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 		Phase: "decide", Action: "request",
 		ProNumPair:      common.ProposalNumPair{},
 		ProValue:        self.v_a,
-		// set next_view
-		VID:             vid + 1, View: self.next_view})
+		// set next_view, to be phase2 responders
+		VID:             vid + 1, View: self.responders})
 
 	//send pprepare to everyone
 	ch_finish := make(chan string, len(view))
