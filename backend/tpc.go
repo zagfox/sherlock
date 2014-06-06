@@ -3,13 +3,12 @@ package backend
 import (
 	"sherlock/common"
 	"sherlock/lockstore"
-	"sync"
 )
 
 var _ common.MsgHandlerIf = new(TpcMsgHandler)
 
 type TpcMsgHandler struct {
-	lg *LogPlayer
+	lg *lockstore.LogPlayer
 	view lockstore.ServerView
 }
 
@@ -49,7 +48,7 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 		}
 	}
 	//reply current LB of this node
-	rep := common.Log{ VID:msg.VID, SN:serial, LB:msg.GetLB(), Phase:msg.Phase }
+	rep := common.Log{ VID:msg.VID, SN:serial, LB:self.lg.GetLB(), Phase:msg.Phase }
 	switch msg.Phase{
 		case "prepare":
 			if committed{
