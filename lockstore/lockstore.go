@@ -2,10 +2,10 @@
 package lockstore
 
 import (
-	//"fmt"
-	//"errors"
+//	"fmt"
+//	"errors"
 	"container/list"
-	"sync"
+//	"sync"
 	"encoding/json"
 	"strconv"
 
@@ -26,8 +26,7 @@ type LockStore struct {
 	//data store for log and lock map queue
 	ds *DataStore
 
-	logcount uint64
-	lock sync.Mutex
+	lg *LogPlayer
 }
 
 func NewLockStore(srvView *ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
@@ -149,13 +148,6 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 	return self.ds.GetQueue(lname)
 }
 
-func (self *LockStore) nextlog() uint64{
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	self.logcount++
-	return self.logcount
-}
-
 //The 2PC implementation
 func (self *LockStore) twophasecommit(log common.Log) bool {
 	vid, peers := self.srvView.GetView()
@@ -163,6 +155,11 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 	log.VID = vid
 	//if any peers in the current view fails, a view change request will be issued
 	bad := false
+	//Propagate the GLB when doing 2PC
+	log.LB = self.lg.GetGLB()
+	//Try to get the new GLB
+	glb := self.lg.GetLB()
+	lbchan := make(chan uint64, len(peers))
 	// Phase one, broadcast the log to every nodes in current view
 	// IF any node fails, updateview will redo after that
 	for _, idx := range peers {
@@ -173,10 +170,12 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 				self.srvView.DelNode(idx)
 				bad = true
 				rep <- true
+				lbchan <- uint64(0)
 				return
 			}
 			replog := common.ParseString(reply.Body)
 			rep <- replog.OK
+			lbchan <- replog.LB
 		}(idx)
 	}
 	commit := true
@@ -185,12 +184,17 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 		if <-rep == false {
 			commit = false
 		}
+		if id := <-lbchan; id < glb{
+			glb = id
+		}
 	}
 	//Any node fails, update view
 	if bad {
 		go self.srvView.RequestUpdateView()
 		return false
 	}
+	//Update the GLB here
+	self.lg.UpdateGLB(glb)
 	if commit {
 		log.Phase = "commit"
 	} else {
@@ -224,7 +228,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 
 func (self *LockStore) appendQueue(qname, item string) bool {
 	log := common.Log{
-		SN: self.nextlog(),
+		SN: self.lg.NextLogID(),
 		Op:       "append",
 		Phase:    "prepare",
 		LockName: qname,
@@ -235,7 +239,7 @@ func (self *LockStore) appendQueue(qname, item string) bool {
 
 func (self *LockStore) popQueue(qname, item string) bool {
 	log := common.Log{
-		SN: self.nextlog(),
+		SN: self.lg.NextLogID(),
 		Op:       "pop",
 		Phase:    "prepare",
 		LockName: qname,

@@ -8,6 +8,7 @@ import(
 type Log struct{
 	VID int						// sender's view ID
 	SN uint64					// the serial number, the master always have the highest log SN
+	LB uint64					// This field is used to synchronize the state of log player
 	Op string					// the operation requested
 	Phase string				// phase in 2PC
 	OK bool						// the flag for prepare phase
