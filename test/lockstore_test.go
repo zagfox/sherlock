@@ -1,9 +1,9 @@
 package test
 
 import (
+	"log"
 	"runtime/debug"
 	"testing"
-	"log"
 
 	"sherlock/common"
 	"sherlock/lockstore"
@@ -40,6 +40,7 @@ func startLockStore(Id int) common.LockStoreIf {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
 
+	// srvView, num:1, mid:0
 	srvView := paxos.NewServerView(bc.Id, 1, 0, "ready", srvs)
 	ds := lockstore.NewDataStore()
 	ls := lockstore.NewLockStore(srvView, srvs, ds)
@@ -47,7 +48,7 @@ func startLockStore(Id int) common.LockStoreIf {
 }
 
 func basicTestLockStore(s common.LockStoreIf) {
-// Start testing here
+	// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content
@@ -90,7 +91,6 @@ func basicTestLockStore(s common.LockStoreIf) {
 	ne(s.ListQueue("l2", &cList))
 	as(len(cList.L) == 0)
 }
-
 
 func TestLockStore(t *testing.T) {
 	ls := startLockStore(0)

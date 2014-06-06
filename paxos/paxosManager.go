@@ -239,7 +239,7 @@ func (self *PaxosManager) phasePrepare() string {
 	v_tmp := -1          // value corresponding to np_tmp
 	responders := make([]int, 0)    // keep record to responders
 
-	//self.Logln("phasePrepare, sending all messeges")
+	self.Logln("phasePrepare, sending all messeges")
 	//send pprepare to everyone
 	ch_finish := make(chan string, self.Num)
 	for v := 0; v < self.Num; v++ {
@@ -248,7 +248,7 @@ func (self *PaxosManager) phasePrepare() string {
 			// network error during paxos
 			// Plan: go on
 		}
-		//fmt.Println(reply[v])
+		// fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -290,11 +290,15 @@ func (self *PaxosManager) phasePrepare() string {
 		// set value and return success
 		// should be right, though a little different from lecture nodes
 		// because it would always send to self
-		if v_tmp == -1 || !self.NodeInView(v_tmp) {
+		/*if v_tmp == -1 || !self.NodeInView(v_tmp) {  // this is incorrect, node may be down at this time
 			//if no one has valid reply for value, select self to be master
 			np_tmp = self.my_np
 			v_tmp = self.Id
-		}
+		}*/
+		// use a brute method, always listen to me!
+		np_tmp = self.my_np
+		v_tmp = self.Id
+
 		self.SetAcceptedValue(np_tmp, v_tmp)
 		return common.PaxosSuccess
 	}
