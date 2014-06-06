@@ -15,7 +15,7 @@ type DataStore struct {
 	mqueue map[string]*list.List
 
 	// expose Log
-	Log []*common.Log
+	Log     []*common.Log
 	LogLock sync.Mutex
 }
 
@@ -64,17 +64,19 @@ func (self *DataStore) AppendQueue(qname, item string) bool {
 	return true
 }
 
-func (self *DataStore) PopQueue(qname string) (string, bool) {
+func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	//todo, use Log
 	q, ok := self.mqueue[qname]
 	if !ok || q.Len() == 0 {
 		return "", false
 	}
 
 	item := q.Front().Value.(string)
+	if item != uname {
+		return "", false
+	}
 	q.Remove(q.Front())
 	if q.Len() == 0 {
 		delete(self.mqueue, qname)

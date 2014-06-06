@@ -87,12 +87,12 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		err = self.clts[mid].Acquire(lu, reply)
 
 		if err != nil{
-			fmt.Println("network error, change mid")
+			fmt.Println("mid=", mid, "network error, change mid")
 			self.setMid(mid+1)
 			continue
 		}
 
-		fmt.Println(reply)
+		fmt.Println("mid=", mid, "reply=", reply)
 		if reply.Head == "NotReady" {
 			time.Sleep(time.Second)
 			continue

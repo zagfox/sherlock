@@ -6,8 +6,8 @@ import (
 	//"errors"
 	"container/list"
 	//"sync"
-	"strconv"
 	"encoding/json"
+	"strconv"
 
 	"sherlock/common"
 	"sherlock/message"
@@ -115,7 +115,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	if q.Front().Value.(string) == uname {
 		//TODO, use two pc
 		reply.Head = "LockReleased"
-		self.popQueue(lname)
+		self.popQueue(lname, uname)
 
 		// Notify other user
 		self.updateRelease(lu.Lockname)
@@ -162,9 +162,9 @@ func (self *LockStore) appendQueue(qname, item string) bool {
 	return self.ds.AppendQueue(qname, item)
 }
 
-func (self *LockStore) popQueue(qname string) (string, bool) {
+func (self *LockStore) popQueue(qname, uname string) (string, bool) {
 	//TODO: use 2PC
-	return self.ds.PopQueue(qname)
+	return self.ds.PopQueue(qname, uname)
 }
 
 // When release, told the first one in queue

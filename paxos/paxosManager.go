@@ -248,7 +248,7 @@ func (self *PaxosManager) phasePrepare() string {
 			// network error during paxos
 			// Plan: go on
 		}
-		// fmt.Println(reply[v])
+		fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -264,7 +264,8 @@ func (self *PaxosManager) phasePrepare() string {
 		if reply_pb.Action == "oldview" {
 			// believe it and restart paxos
 			self.SetView(reply_pb.VID, reply_pb.View)
-			return common.PaxosRestart
+			//return common.PaxosRestart
+			return common.PaxosFailure
 
 		} else if reply_pb.Action == "reject" {
 			//go on
@@ -353,7 +354,8 @@ func (self *PaxosManager) phaseAccept() string {
 			// believe it and restart paxos
 			//fmt.Println("paxosManager : accept-> old view")
 			self.SetView(reply_pb.VID, reply_pb.View)
-			return common.PaxosRestart
+			//return common.PaxosRestart
+			return common.PaxosFailure
 
 		} else if reply_pb.Action == "reject" {
 			// go on
@@ -425,7 +427,8 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 		if reply_pb.Action == "oldview" {
 			// believe it and restart paxos
 			self.SetView(reply_pb.VID, reply_pb.View)
-			return -1, common.PaxosRestart
+			//return -1, common.PaxosRestart
+			return -1, common.PaxosFailure
 
 		} else if reply_pb.Action == "reject" {
 			// go on

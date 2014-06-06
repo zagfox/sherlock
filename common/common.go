@@ -40,7 +40,7 @@ type DataStoreIf interface {
 	AppendQueue(qname, item string) bool
 
 	// pop queue's first item
-	PopQueue(qname string) (string, bool)
+	PopQueue(qname, uname string) (string, bool)
 }
 
 // Backend config
