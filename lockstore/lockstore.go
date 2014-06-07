@@ -61,9 +61,10 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	// begin operation
 	lname := lu.Lockname
 	uname := lu.Username
-
+//TODO the logic here may need to change
+//We want it return LockAcquired if it has the lock now, and LockQueuing if it's not
 	// Implement func
-	_, ok := self.getQueue(lname)
+	ok := self.lg.IsRequested(lname, uname)
 	if ok {
 		// no deadlock checking, just queuing
 		reply.Head = "LockQueuing"
@@ -171,7 +172,6 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 			msg := common.Content{Head: "2pc", Body: log.ToString()}
 			reply := common.Content{}
 			if self.srvs[idx].Msg(msg, &reply) != nil {
-//				self.srvView.RequestDelNode(idx)
 				bad = true
 				rep <- true
 				lbchan <- uint64(0)
