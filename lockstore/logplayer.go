@@ -119,8 +119,8 @@ func (self *LogPlayer) IsRequested(lname, uname string)bool{
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
 	q, ok := self.ds.GetQueue(lname)
-	if ok{
 	//Check if already in queue
+	if ok{
 		for e := q.Front(); e != nil; e = e.Next(){
 			if uname == e.Value.(string){
 				return true
@@ -182,12 +182,13 @@ func (self *LogPlayer) play(){
 
 // When release, told the first one in queue
 func (self *LogPlayer) notify(lname string) error {
-	self.LogLock.Lock()
-	defer self.LogLock.Unlock()
+	fmt.Println("entered notify")
 	mid := self.view.GetMasterId()
 	if self.view.Id != mid{
 		return nil
 	}
+	self.LogLock.Lock()
+	defer self.LogLock.Unlock()
 	// if anyone waiting, find it and send Event
 	q, ok := self.ds.GetQueue(lname)
 	if !ok {
@@ -207,6 +208,9 @@ func (self *LogPlayer) notify(lname string) error {
 	var ctnt common.Content
 	ctnt.Head = "LockAcquired"
 	ctnt.Body = string(bytes)
+
+	fmt.Println("notify")
+	fmt.Println(ctnt.Body)
 	sender.Msg(ctnt, &reply)
 
 	return nil
