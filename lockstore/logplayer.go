@@ -27,6 +27,8 @@ type LogPlayer struct{
 	lb uint64					//The LB of this node, all previous logs are committed or aborted
 
 	view *paxos.ServerView
+
+	msg *message.MsgClientFactory
 }
 
 func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView) *LogPlayer{
@@ -118,9 +120,8 @@ func (self *LogPlayer) GetOwner(lname string) string {
 func (self *LogPlayer) IsRequested(lname, uname string)bool{
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
-	q, ok := self.ds.GetQueue(lname)
 	//Check if already in queue
-	if ok{
+	if q, ok := self.ds.GetQueue(lname); ok{
 		for e := q.Front(); e != nil; e = e.Next(){
 			if uname == e.Value.(string){
 				return true
@@ -180,9 +181,11 @@ func (self *LogPlayer) play(){
 	}
 }
 
+func (self *LogPlayer) getClient(user string)message.MessageIf{
+}
+
 // When release, told the first one in queue
 func (self *LogPlayer) notify(lname string) error {
-	fmt.Println("entered notify")
 	mid := self.view.GetMasterId()
 	if self.view.Id != mid{
 		return nil
@@ -202,7 +205,7 @@ func (self *LogPlayer) notify(lname string) error {
 
 	// Send out message
 	var reply common.Content
-	sender := message.NewMsgClient(uname)
+	sender := msg.GetClient(uname)
 	bytes, _ := json.Marshal(common.LUpair{lname, uname})
 
 	var ctnt common.Content
