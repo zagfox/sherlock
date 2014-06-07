@@ -1,19 +1,22 @@
 package backend
 
 import (
+//	"fmt"
+
 	"sherlock/common"
 	"sherlock/lockstore"
+	"sherlock/paxos"
 )
 
 var _ common.MsgHandlerIf = new(TpcMsgHandler)
 
 type TpcMsgHandler struct {
 	lg *lockstore.LogPlayer
-	view lockstore.ServerView
+	view *paxos.ServerView
 }
 
-func NewTpcMsgHandler() common.MsgHandlerIf {
-	return &TpcMsgHandler{}
+func NewTpcMsgHandler(lg *lockstore.LogPlayer, view *paxos.ServerView) common.MsgHandlerIf {
+	return &TpcMsgHandler{ lg:lg, view:view }
 }
 
 //Handles the message involved with 2PC between the servers
@@ -21,7 +24,7 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 	// get lock of the logs, so it won't be changed by the log player
 	// also make sure only one message is being handled at a time
 	self.lg.LogLock.Lock()
-	defer self.lg.LogLock.Lock()
+	defer self.lg.LogLock.Unlock()
 	msg := common.ParseString(ctnt.Body)
 	// discard the message if it is from previous view or it is before the GLB
 	vid, _ := self.view.GetView()

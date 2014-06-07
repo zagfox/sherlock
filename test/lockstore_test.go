@@ -1,13 +1,14 @@
 package test
 
 import (
+	"log"
 	"runtime/debug"
 	"testing"
-	"log"
 
 	"sherlock/common"
 	"sherlock/lockstore"
 	"sherlock/message"
+	"sherlock/paxos"
 )
 
 func ne(e error) {
@@ -31,20 +32,24 @@ func startLockStore(Id int) common.LockStoreIf {
 		Addr:  rc.SrvPorts[Id],
 		Laddr: rc.SrvMsgPorts[Id],
 		Peers: rc.SrvMsgPorts,
-		Ready: nil,
+		Ready: make(chan bool, 10),
 	}
-	srvView := lockstore.NewServerView(bc.Id, 1, 0, "ready")
+
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
+
+	// srvView, num:1, mid:0
+	srvView := paxos.NewServerView(bc.Id, 1, 0, "ready", srvs)
 	ds := lockstore.NewDataStore()
-	ls := lockstore.NewLockStore(srvView, srvs, ds)
+	lg := lockstore.NewLogPlayer(ds)
+	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 	return ls
 }
 
 func basicTestLockStore(s common.LockStoreIf) {
-// Start testing here
+	// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
 	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content
@@ -87,7 +92,6 @@ func basicTestLockStore(s common.LockStoreIf) {
 	ne(s.ListQueue("l2", &cList))
 	as(len(cList.L) == 0)
 }
-
 
 func TestLockStore(t *testing.T) {
 	ls := startLockStore(0)

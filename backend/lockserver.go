@@ -12,34 +12,38 @@ import (
 	"sherlock/common"
 	"sherlock/lockstore"
 	"sherlock/message"
+	"sherlock/paxos"
 )
 
 type LockServer struct {
 	bc      *common.BackConfig
-	srvView *lockstore.ServerView // structure to store self: server Id, masterid, state
-
 	srvs []common.MessageIf // method to talk to other servers
+
+	srvView *paxos.ServerView // structure to store self: server Id, masterid, state
+
 	ds   common.DataStoreIf // underlying data store with lock map and log
 	ls   common.LockStoreIf // lock rpc entry
+	lg	 *lockstore.LogPlayer
 }
 
 func NewLockServer(bc *common.BackConfig) *LockServer {
-	// server info
-	srvView := lockstore.NewServerView(bc.Id, len(bc.Peers), 0, common.SrvReady)
-
 	// srvs talk to all other servers
 	srvs := make([]common.MessageIf, len(bc.Peers))
 	for i, saddr := range bc.Peers {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
 
+	// server info
+	srvView := paxos.NewServerView(bc.Id, len(bc.Peers), 0, common.SrvReady, srvs)
+
 	// data  store and lock store
 	ds := lockstore.NewDataStore()
-	ls := lockstore.NewLockStore(srvView, srvs, ds)
+	lg := lockstore.NewLogPlayer(ds)
+	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 
 	return &LockServer{
 		bc: bc, srvView: srvView,
-		srvs: srvs, ds: ds, ls: ls,
+		srvs: srvs, ds: ds, ls: ls, lg: lg,
 	}
 }
 
@@ -50,12 +54,10 @@ func (self *LockServer) Start() {
 	// Start a thread to listen and handle messages
 	self.startMsgListener()
 
-	fmt.Println("start lock serivice")
 	// Start lock service rpc
 	go self.startLockService()
 	var ok bool
 	ok = <-self.bc.Ready
-	fmt.Println("start lock serivice")
 	if !ok {
 		log.Fatal("start lock service error")
 	}
@@ -63,7 +65,6 @@ func (self *LockServer) Start() {
 	// Start a thread to reply log
 	go self.startLogPlayer()
 
-	fmt.Println("start lock serivice")
 	go self.startHeartBeat()
 
 	/*
@@ -105,7 +106,7 @@ func (self *LockServer) startLockService() {
 func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
-	msghandler := NewServerMsgHandler()
+	msghandler := NewServerMsgHandler(self.srvView, self.lg)
 	msglistener := message.NewMsgListener(msghandler)
 	ready := make(chan bool, 1)
 
@@ -128,29 +129,37 @@ func (self *LockServer) startMsgListener() {
 
 // Thread that reply log
 func (self *LockServer) startLogPlayer() {
-	for {
-		/*
-			msg := common.Content{"come on", "msg from log player"}
-				var reply common.Content
-
-				srv := self.srvs[3]
-			    srv.Msg(msg, &reply)
-		*/
-
-		time.Sleep(time.Second)
-	}
+	self.lg.Serve()
 }
 
 func (self *LockServer) startHeartBeat() {
+	/*if self.srvView.Id != 0 {
+		return
+	}*/
 	fmt.Println("In heart beat")
 	var ctnt, reply common.Content
 	for {
+		needUpdate := false
 		for i, srv := range self.srvs {
-			if i == 1 {
-				e := srv.Msg(ctnt, &reply)
-				fmt.Println("in heartbeat", e)
-				self.srvView.RequestUpdateView()
+			e := srv.Msg(ctnt, &reply)
+			if e != nil {
+				if self.srvView.NodeInView(i) {
+					needUpdate = true
+					self.srvView.RequestDelNode(i)
+				}
+			} else {
+				if !self.srvView.NodeInView(i) {
+					needUpdate = true
+					self.srvView.RequestAddNode(i)
+				}
 			}
+		}
+		if needUpdate {
+			//vid, view := self.srvView.GetView()
+			//fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
+			self.srvView.RequestUpdateView()
+			//fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
+			fmt.Println()
 		}
 		time.Sleep(time.Second)
 	}

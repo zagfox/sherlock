@@ -1,8 +1,9 @@
 package backend
 
 import (
-	"fmt"
+	//"fmt"
 	"sherlock/common"
+	"sherlock/lockstore"
 	"sherlock/paxos"
 )
 
@@ -13,14 +14,15 @@ type ServerMsgHandler struct {
 	handlePaxos common.MsgHandlerIf
 }
 
-func NewServerMsgHandler() common.MsgHandlerIf {
-	paxosHandler := paxos.NewPaxosMsgHandler()
-	return &ServerMsgHandler{handlePaxos: paxosHandler}
+func NewServerMsgHandler(srvView *paxos.ServerView, lg *lockstore.LogPlayer) common.MsgHandlerIf {
+	paxosHandler := paxos.NewPaxosMsgHandler(srvView)
+	tpcHandler := NewTpcMsgHandler(lg, srvView)
+	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler}
 }
 
 func (self *ServerMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	// Examine the content
-	fmt.Println("in serverMsgHandler", ctnt)
+	//fmt.Println("in serverMsgHandler", ctnt)
 	switch ctnt.Head {
 	case "2pc":
 		return self.handle2pc.Handle(ctnt, reply)

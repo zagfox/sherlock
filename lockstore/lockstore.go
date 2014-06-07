@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-//	"fmt"
+	"fmt"
 //	"errors"
 	"container/list"
 //	"sync"
@@ -11,6 +11,7 @@ import (
 
 	"sherlock/common"
 	"sherlock/message"
+	"sherlock/paxos"
 )
 
 var _ common.LockStoreIf = new(LockStore)
@@ -18,7 +19,7 @@ var _ common.LockStoreIf = new(LockStore)
 // struct to store lock infomation
 type LockStore struct {
 	// self server infomation
-	srvView *ServerView
+	srvView *paxos.ServerView
 
 	// entry to talk to other servers
 	srvs []common.MessageIf
@@ -29,12 +30,13 @@ type LockStore struct {
 	lg *LogPlayer
 }
 
-func NewLockStore(srvView *ServerView, srvs []common.MessageIf, ds *DataStore) *LockStore {
+func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataStore, lg *LogPlayer) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
 		srvView: srvView,
 		srvs:    srvs,
 		ds:      ds,
+		lg:		 lg,
 	}
 }
 
@@ -150,6 +152,8 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 
 //The 2PC implementation
 func (self *LockStore) twophasecommit(log common.Log) bool {
+	fmt.Println("2PC")
+	fmt.Println(log.ToString())
 	vid, peers := self.srvView.GetView()
 	rep := make(chan bool, len(peers))
 	log.VID = vid
@@ -167,7 +171,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 			msg := common.Content{Head: "2pc", Body: log.ToString()}
 			reply := common.Content{}
 			if self.srvs[idx].Msg(msg, &reply) != nil {
-				self.srvView.DelNode(idx)
+//				self.srvView.RequestDelNode(idx)
 				bad = true
 				rep <- true
 				lbchan <- uint64(0)
@@ -206,7 +210,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 			msg := common.Content{Head: "2pc", Body: log.ToString()}
 			reply := common.Content{}
 			if self.srvs[idx].Msg(msg, &reply) != nil {
-				self.srvView.DelNode(idx)
+//				self.srvView.DelNode(idx)
 				bad = true
 				rep <- false
 				return

@@ -67,7 +67,7 @@ func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 	}
 
 	item := q.Front().Value.(string)
-	if item != uname{
+	if item != uname {
 		return "", false
 	}
 	q.Remove(q.Front())
