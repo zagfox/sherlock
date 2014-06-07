@@ -21,8 +21,8 @@ type lockclient struct {
 	laddr string			//addr for client listening
 	lpid int                //pid for listen thread
 
-	//TODO, give channel to every lock
-	acqOk chan string       //Chan to send acquire ok
+	// give channel to every lock
+	mAcqChan map[common.LUpair]chan string       //Chan to receive acq, release events from server
 }
 
 func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
@@ -33,10 +33,10 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	}
 
 	// acqOK channel, waiting for event of lock release
-	acqOk := make(chan string, common.ChSize)
+	mAcqChan := make(map[common.LUpair]chan string)
 
 	// Create lockclient
-	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, acqOk:acqOk}
+	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, mAcqChan:mAcqChan}
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -47,7 +47,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 
 func (self *lockclient) startMsgListener() {
 	// Start msg listener, it is an rpc server
-	msghandler := NewClientMsgHandler(self.laddr, self.acqOk)
+	msghandler := NewClientMsgHandler(self.laddr, self.mAcqChan)
 	msglistener := message.NewMsgListener(msghandler)
 
 	msgconfig := common.MsgConfig{
@@ -108,12 +108,13 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 
 	// handle reply Head
 	switch reply.Head {
-	// acquire success
-	case "LockAcquired":
-
-	//block and wait for set free
 	case "LockQueuing":
-		<-self.acqOk
+		// in normal case, request goes to log, return this
+		_, ok := self.mAcqChan[lu]
+		if !ok {
+			self.mAcqChan = make(map[common.LUpair]chan string)
+		}
+		<-self.mAcqChan[lu]
 		reply.Head = "LockAcquiredByEvent"
 	default:
 	}
