@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	//"fmt"
+	"fmt"
 	"container/list"
 	"sherlock/common"
 	"sync"
@@ -30,6 +30,8 @@ func (self *DataStore) GetQueue(qname string) (*list.List, bool) {
 }
 
 func (self *DataStore) AppendQueue(qname, item string) bool {
+	fmt.Println("Qname: "+qname)
+	fmt.Println("Uname: "+item)
 	self.lock.Lock()
 	defer self.lock.Unlock()
 

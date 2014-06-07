@@ -1,7 +1,7 @@
 package backend
 
 import (
-	//"fmt"
+//	"fmt"
 	"sherlock/common"
 	"sherlock/lockstore"
 	"sherlock/paxos"
@@ -21,6 +21,8 @@ func NewServerMsgHandler(srvView *paxos.ServerView, lg *lockstore.LogPlayer) com
 }
 
 func (self *ServerMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
+//	fmt.Println(ctnt.Head)
+//	fmt.Println(ctnt.Body)
 	// Examine the content
 	//fmt.Println("in serverMsgHandler", ctnt)
 	switch ctnt.Head {

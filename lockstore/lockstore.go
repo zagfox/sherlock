@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	"fmt"
+//	"fmt"
 //	"errors"
 	"container/list"
 //	"sync"
@@ -152,8 +152,8 @@ func (self *LockStore) getQueue(lname string) (*list.List, bool) {
 
 //The 2PC implementation
 func (self *LockStore) twophasecommit(log common.Log) bool {
-	fmt.Println("2PC")
-	fmt.Println(log.ToString())
+//	fmt.Println("2PC")
+//	fmt.Println(log.ToString())
 	vid, peers := self.srvView.GetView()
 	rep := make(chan bool, len(peers))
 	log.VID = vid
