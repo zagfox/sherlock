@@ -55,6 +55,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	mid := self.srvView.GetMasterId()
 	if self.srvView.Id != mid {
 		reply.Head = "NotMaster"
+		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
 

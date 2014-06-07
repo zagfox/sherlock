@@ -40,10 +40,12 @@ func startLockStore(Id int) common.LockStoreIf {
 		srvs[i] = message.NewMsgClient(saddr)
 	}
 
+	msg := message.NewMsgClientFactory()
+
 	// srvView, num:1, mid:0
 	srvView := paxos.NewServerView(bc.Id, 1, 0, "ready", srvs)
 	ds := lockstore.NewDataStore()
-	lg := lockstore.NewLogPlayer(ds, srvView)
+	lg := lockstore.NewLogPlayer(ds, srvView, msg)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 	return ls
 }
