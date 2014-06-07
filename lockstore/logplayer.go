@@ -31,7 +31,7 @@ type LogPlayer struct{
 	msg *message.MsgClientFactory
 }
 
-func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView) *LogPlayer{
+func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView, msg *message.MsgClientFactory) *LogPlayer{
 	lg := &LogPlayer{
 		Log: make([]*common.Log, 0),
 		ds: data,
@@ -40,6 +40,7 @@ func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView) *LogPlayer{
 		glb: uint64(0),
 		lb: uint64(0),
 		view: view,
+		msg: msg,
 	}
 	return lg
 }
@@ -181,9 +182,6 @@ func (self *LogPlayer) play(){
 	}
 }
 
-func (self *LogPlayer) getClient(user string)message.MessageIf{
-}
-
 // When release, told the first one in queue
 func (self *LogPlayer) notify(lname string) error {
 	mid := self.view.GetMasterId()
@@ -205,7 +203,7 @@ func (self *LogPlayer) notify(lname string) error {
 
 	// Send out message
 	var reply common.Content
-	sender := msg.GetClient(uname)
+	sender := self.msg.GetMsgClient(uname)
 	bytes, _ := json.Marshal(common.LUpair{lname, uname})
 
 	var ctnt common.Content

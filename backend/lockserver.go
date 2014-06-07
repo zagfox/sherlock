@@ -24,6 +24,7 @@ type LockServer struct {
 	ds   common.DataStoreIf // underlying data store with lock map and log
 	ls   common.LockStoreIf // lock rpc entry
 	lg	 *lockstore.LogPlayer
+	msg	 *message.MsgClientFactory
 }
 
 func NewLockServer(bc *common.BackConfig) *LockServer {
@@ -36,9 +37,10 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 	// server info
 	srvView := paxos.NewServerView(bc.Id, len(bc.Peers), 0, common.SrvReady, srvs)
 
+	msg := message.NewMsgClientFactory()
 	// data  store and lock store
 	ds := lockstore.NewDataStore()
-	lg := lockstore.NewLogPlayer(ds, srvView)
+	lg := lockstore.NewLogPlayer(ds, srvView, msg)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 
 	return &LockServer{
