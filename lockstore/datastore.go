@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-//	"fmt"
+	"fmt"
 	"container/list"
 	"sherlock/common"
 	"sync"
@@ -56,6 +56,7 @@ func (self *DataStore) AppendQueue(qname, item string) bool {
 		q.PushBack(item)
 	}
 
+	fmt.Println(self.mqueue[qname])
 	return true
 }
 
@@ -76,5 +77,6 @@ func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 	if q.Len() == 0 {
 		delete(self.mqueue, qname)
 	}
+	fmt.Println(self.mqueue[qname])
 	return item, true
 }

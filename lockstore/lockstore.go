@@ -2,16 +2,17 @@
 package lockstore
 
 import (
-//	"fmt"
+	"fmt"
 //	"errors"
 	"container/list"
 //	"sync"
 	"encoding/json"
-	"strconv"
 
 	"sherlock/common"
-	"sherlock/message"
+//	"sherlock/message"
 	"sherlock/paxos"
+
+	"strconv"
 )
 
 var _ common.LockStoreIf = new(LockStore)
@@ -54,28 +55,17 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	mid := self.srvView.GetMasterId()
 	if self.srvView.Id != mid {
 		reply.Head = "NotMaster"
-		reply.Body = strconv.FormatUint(uint64(mid), 10)
 		return nil
 	}
 
 	// begin operation
 	lname := lu.Lockname
 	uname := lu.Username
-//TODO the logic here may need to change
-//We want it return LockAcquired if it has the lock now, and LockQueuing if it's not
-	// Implement func
-	ok := self.lg.IsRequested(lname, uname)
-	if ok {
-		// no deadlock checking, just queuing
-		reply.Head = "LockQueuing"
-	} else {
-		// if lock entry not found, acquire it
-		reply.Head = "LockAcquired"
-	}
-
+	reply.Head = "LockQueuing"
+	bytes, _ := json.Marshal(lu)
+	reply.Body = string(bytes)
 	//put in queue
 	self.appendQueue(lname, uname)
-
 	return nil
 }
 
@@ -108,21 +98,11 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 		return nil
 	}
 
-	// Check if queue has value
-	if q.Len() == 0 {
-		reply.Head = "LockEmptyQueue"
-		return nil
-	}
-
 	//if found it and name is correct, release it
 	//fmt.Println(q.Front().Value.(string))
 	if q.Front().Value.(string) == uname {
-		//TODO, use two pc
 		reply.Head = "LockReleased"
 		self.popQueue(lname, uname)
-
-		// Notify other user
-		self.updateRelease(lu.Lockname)
 	} else {
 		reply.Head = "LockNotOwn"
 	}
@@ -162,6 +142,7 @@ func (self *LockStore) twophasecommit(log common.Log) bool {
 	bad := false
 	//Propagate the GLB when doing 2PC
 	log.LB = self.lg.GetGLB()
+	fmt.Println(log.ToString())
 	//Try to get the new GLB
 	glb := self.lg.GetLB()
 	lbchan := make(chan uint64, len(peers))
@@ -250,30 +231,4 @@ func (self *LockStore) popQueue(qname, item string) bool {
 		UserName: item,
 	}
 	return self.twophasecommit(log)
-}
-
-// When release, told the first one in queue
-func (self *LockStore) updateRelease(lname string) error {
-	// if anyone waiting, find it and send Event
-	q, ok := self.getQueue(lname)
-	if !ok {
-		return nil
-	}
-	if q.Len() == 0 {
-		return nil
-	}
-
-	uname := q.Front().Value.(string)
-
-	// Send out message
-	var reply common.Content
-	sender := message.NewMsgClient(uname)
-	bytes, _ := json.Marshal(common.LUpair{lname, uname})
-
-	var ctnt common.Content
-	ctnt.Head = "acqOk"
-	ctnt.Body = string(bytes)
-	sender.Msg(ctnt, &reply)
-
-	return nil
 }
