@@ -43,7 +43,7 @@ func startLockStore(Id int) common.LockStoreIf {
 	// srvView, num:1, mid:0
 	srvView := paxos.NewServerView(bc.Id, 1, 0, "ready", srvs)
 	ds := lockstore.NewDataStore()
-	lg := lockstore.NewLogPlayer(ds)
+	lg := lockstore.NewLogPlayer(ds, srvView)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 	return ls
 }
@@ -57,7 +57,7 @@ func basicTestLockStore(s common.LockStoreIf) {
 
 	//basic test for one user
 	ne(s.Acquire(lu1, &reply))
-	as(reply.Head == "LockAcquired")
+	as(reply.Head == "LockQueuing")
 
 	/*	// Assume NO Deadlock
 		ne(s.Acquire(lu1, &succ))

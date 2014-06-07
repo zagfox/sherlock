@@ -7,6 +7,17 @@ import (
 	"sync"
 )
 
+type MsgClientFactory struct {
+	mclients map[string]common.MessageIf
+}
+
+func (self *MsgClientFactory) GetMsgClient(name string) common.MessageIf {
+	if _, ok := self.mclients[name]; !ok {
+		self.mclients[name] = NewMsgClient(name)
+	}
+	return self.mclients[name]
+}
+
 var _ common.MessageIf = new(MsgClient)
 
 type MsgClient struct {
