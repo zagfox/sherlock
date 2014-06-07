@@ -38,7 +38,7 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 
 	// data  store and lock store
 	ds := lockstore.NewDataStore()
-	lg := lockstore.NewLogPlayer(ds)
+	lg := lockstore.NewLogPlayer(ds, srvView)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 
 	return &LockServer{
