@@ -296,7 +296,8 @@ func (self *PaxosManager) phasePrepare() string {
 			np_tmp = self.my_np
 			v_tmp = self.Id
 		}*/
-		// use a brute method, always listen to me!
+		// use a brute method, always
+		// and mid is
 		np_tmp = self.my_np
 		v_tmp = self.Id
 

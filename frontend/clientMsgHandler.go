@@ -16,28 +16,21 @@ func NewClientMsgHandler(laddr string, mAcqChan map[common.LUpair]chan string) c
 }
 
 func (self *ClientMsgHandler) Handle(ctnt common.Content, reply *common.Content) error  {
-	//fmt.Println("clientMsgHandler", ctnt)
-	fmt.Println("hello")
+	fmt.Println("clientMsgHandler", ctnt)
 	// Examine the content
 	switch ctnt.Head {
 	case "LockAcquired":
 		var lu common.LUpair
 		json.Unmarshal([]byte(ctnt.Body), &lu)
-		/*if lu.Username == self.laddr {
-			fmt.Println("client msg handler", ctnt)
-			self.acqOk <- "true"
-			reply.Head = "success"
-		}*/
+
+		// the channel must be there when doing rpc call
 		ch, ok := self.mAcqChan[lu]
 		if !ok {
 			reply.Head = "failure"
-			reply.Body = "lu pair not waiting"
-		} else {
-		fmt.Println("received msg")
-		fmt.Println(ctnt.Body)
-			ch <- "acquired"
-			reply.Head = "success"
+			return nil
 		}
+		ch <- "acquired"
+		reply.Head = "success"
 	case "LockLeaseCheck":
 	}
 	return nil

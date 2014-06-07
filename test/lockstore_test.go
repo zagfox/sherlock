@@ -53,9 +53,9 @@ func startLockStore(Id int) common.LockStoreIf {
 func basicTestLockStore(s common.LockStoreIf) {
 	// Start testing here
 	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
-	lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
+	//lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
 	var reply common.Content
-	var cList common.List
+	//var cList common.List
 
 	//basic test for one user
 	ne(s.Acquire(lu1, &reply))
@@ -66,7 +66,7 @@ func basicTestLockStore(s common.LockStoreIf) {
 		as(succ == false)
 	*/
 
-	ne(s.Release(lu1, &reply))
+	/*ne(s.Release(lu1, &reply))
 	as(reply.Head == "LockReleased")
 
 	ne(s.Release(lu1, &reply))
@@ -93,6 +93,7 @@ func basicTestLockStore(s common.LockStoreIf) {
 
 	ne(s.ListQueue("l2", &cList))
 	as(len(cList.L) == 0)
+	*/
 }
 
 func TestLockStore(t *testing.T) {

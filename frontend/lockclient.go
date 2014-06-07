@@ -79,6 +79,12 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	//set lu username
 	lu.Username = self.laddr
 
+	// create channel for this lock
+	_, ok := self.mAcqChan[lu]
+	if !ok {
+		self.mAcqChan[lu] = make(chan string, common.ChSize)
+	}
+
 	// find a machine that could be connected 
 	var mid int
 	var err error
@@ -109,12 +115,9 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	// handle reply Head
 	switch reply.Head {
 	case "LockQueuing":
-		// in normal case, request goes to log, return this
-		_, ok := self.mAcqChan[lu]
-		if !ok {
-			self.mAcqChan[lu] = make(chan string, common.ChSize)
-		}
-		<-self.mAcqChan[lu]
+	// in normal case, request goes to log, return this
+		ch, _ := self.mAcqChan[lu]
+		<-ch    // channel must have been set up
 		reply.Head = "LockAcquiredByEvent"
 	default:
 	}
