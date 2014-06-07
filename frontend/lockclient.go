@@ -112,7 +112,7 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		// in normal case, request goes to log, return this
 		_, ok := self.mAcqChan[lu]
 		if !ok {
-			self.mAcqChan = make(map[common.LUpair]chan string)
+			self.mAcqChan[lu] = make(chan string, common.ChSize)
 		}
 		<-self.mAcqChan[lu]
 		reply.Head = "LockAcquiredByEvent"

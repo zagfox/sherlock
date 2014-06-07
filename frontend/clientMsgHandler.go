@@ -1,7 +1,7 @@
 package frontend
 
 import (
-	//"fmt"
+	"fmt"
 	"encoding/json"
 	"sherlock/common"
 )
@@ -16,6 +16,8 @@ func NewClientMsgHandler(laddr string, mAcqChan map[common.LUpair]chan string) c
 }
 
 func (self *ClientMsgHandler) Handle(ctnt common.Content, reply *common.Content) error  {
+	//fmt.Println("clientMsgHandler", ctnt)
+	fmt.Println("hello")
 	// Examine the content
 	switch ctnt.Head {
 	case "LockAcquired":
