@@ -100,7 +100,7 @@ func (self *LogPlayer) AppendLog(msg common.Log){
 func (self *LogPlayer) IsRequested(lname, uname string)bool{
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
-	q := self.ds.GetQueue(lname)
+	q,_ := self.ds.GetQueue(lname)
 	//Check if already in queue
 	for e := q.Front(); e != nil; e = e.Next(){
 		if uname == e.Value.(string){
