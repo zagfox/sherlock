@@ -43,6 +43,10 @@ func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataSt
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
+	b, e := json.Marshal(*self.ds)
+	fmt.Println(e)
+	fmt.Println(string(b))
+	fmt.Println(*self.ds)
 	// check if server is ready
 	state := self.srvView.GetState()
 	//fmt.Println("lockserver", state)
@@ -67,6 +71,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	reply.Body = string(bytes)
 	//put in queue
 	self.appendQueue(lname, uname)
+	fmt.Println("rpc returned")
 	return nil
 }
 
@@ -96,6 +101,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	q, ok := self.getQueue(lname)
 	if !ok {
 		reply.Head = "LockNotFound"
+	fmt.Println("rpc returned")
 		return nil
 	}
 
@@ -107,6 +113,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	} else {
 		reply.Head = "LockNotOwn"
 	}
+	fmt.Println("rpc returned")
 	return nil
 }
 

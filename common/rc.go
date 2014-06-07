@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var DefaultRCPath = "/classes/cse223b/sp14/cse223f7zhu/gopath/src/sherlock/common/conf.rc"
+var DefaultRCPath = "/classes/cse223b/sp14/cse223y4duan/gopath/src/sherlock/common/conf.rc"
 
 type RC struct {
 	SrvPorts    []string
