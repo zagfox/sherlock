@@ -3,7 +3,6 @@ package lockstore
 
 import (
 	"fmt"
-	"container/list"
 	"sherlock/common"
 	"sync"
 )
@@ -12,50 +11,62 @@ var _ common.DataStoreIf = new(DataStore)
 
 type DataStore struct {
 	lock   sync.Mutex
-	mqueue map[string]*list.List
+	mqueue map[string] []string
+}
+
+func (self *DataStore)GetAll() map[string] []string{
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	locks := make(map[string] []string)
+	for k, v := range self.mqueue {
+		locks[k] = v[:]
+	}
+	return locks
+}
+
+func (self *DataStore)ApplyWarper(sw common.StoreWarper){
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	self.mqueue = make(map[string] []string)
+	for k, v := range sw.Locks{
+		self.mqueue[k] = v[:]
+	}
 }
 
 func NewDataStore() *DataStore {
 	return &DataStore{
-		mqueue: make(map[string]*list.List),
+		mqueue: make(map[string] []string),
 	}
 }
 
-func (self *DataStore) GetQueue(qname string) (*list.List, bool) {
+func (self *DataStore) GetQueue(qname string) ([]string, bool) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	q, ok := self.mqueue[qname]
-	return q, ok
+	return q[:], ok
 }
 
 func (self *DataStore) AppendQueue(qname, item string) bool {
-//	fmt.Println("Qname: "+qname)
-//	fmt.Println("Uname: "+item)
 	self.lock.Lock()
 	defer self.lock.Unlock()
-
-	q, ok := self.mqueue[qname]
-	if !ok {
-		que := list.New()
-		self.mqueue[qname] = que
-		q = que
+	if _, ok := self.mqueue[qname]; !ok {
+		self.mqueue[qname] = make([]string, 0)
 	}
 
 	// Eliminate duplicate here
 	// check if exist
 	exist := false
-	for v := q.Front(); v != nil; v = v.Next() {
-		if item == v.Value.(string) {
+	for _, v := range self.mqueue[qname]{
+		if item == v{
 			exist = true
 		}
 	}
 
 	//append it
 	if !exist {
-		q.PushBack(item)
+		self.mqueue[qname] = append(self.mqueue[qname], item)
 	}
-
 	fmt.Println(self.mqueue[qname])
 	return true
 }
@@ -65,16 +76,16 @@ func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 	defer self.lock.Unlock()
 
 	q, ok := self.mqueue[qname]
-	if !ok || q.Len() == 0 {
+	if !ok || len(q) == 0 {
 		return "", false
 	}
 
-	item := q.Front().Value.(string)
+	item := q[0]
 	if item != uname {
 		return "", false
 	}
-	q.Remove(q.Front())
-	if q.Len() == 0 {
+	q = q[1:]
+	if len(q) == 0 {
 		delete(self.mqueue, qname)
 	}
 	fmt.Println(self.mqueue[qname])

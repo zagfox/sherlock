@@ -31,6 +31,39 @@ type LogPlayer struct{
 	msg *message.MsgClientFactory
 }
 
+func (self *LogPlayer)GetStoreWarper() common.StoreWarper{
+	self.LogLock.Lock()
+	defer self.LogLock.Unlock()
+	self.idLock.Lock()
+	defer self.idLock.Unlock()
+	sw := common.StoreWarper{}
+	sw.Locks = self.ds.GetAll()
+	logs := make([]common.Log, len(self.Log))
+	for i, v := range self.Log{
+		logs[i] = *v
+	}
+	sw.Logs = logs
+	sw.Logcount = self.logcount
+	sw.LB = self.lb
+	sw.GLB = self.glb
+	return sw
+}
+
+func (self *LogPlayer)ApplyWarper(sw common.StoreWarper){
+	self.LogLock.Lock()
+	defer self.LogLock.Unlock()
+	self.idLock.Lock()
+	defer self.idLock.Unlock()
+	self.Log = make([]*common.Log, len(sw.Logs))
+	logs := sw.Logs[:]
+	for i, v := range logs{
+		self.Log[i] = &v
+	}
+	self.logcount = sw.Logcount
+	self.lb = sw.LB
+	self.glb = sw.GLB
+}
+
 func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView, msg *message.MsgClientFactory) *LogPlayer{
 	lg := &LogPlayer{
 		Log: make([]*common.Log, 0),
@@ -112,7 +145,7 @@ func (self *LogPlayer) GetOwner(lname string) string {
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
 	if q, ok := self.ds.GetQueue(lname); ok {
-		return q.Front().Value.(string)
+		return q[0]
 	}
 	return ""
 }
@@ -123,8 +156,8 @@ func (self *LogPlayer) IsRequested(lname, uname string)bool{
 	defer self.LogLock.Unlock()
 	//Check if already in queue
 	if q, ok := self.ds.GetQueue(lname); ok{
-		for e := q.Front(); e != nil; e = e.Next(){
-			if uname == e.Value.(string){
+		for _, e := range q{
+			if uname == e{
 				return true
 			}
 		}
@@ -192,14 +225,10 @@ func (self *LogPlayer) notify(lname string) error {
 	defer self.LogLock.Unlock()
 	// if anyone waiting, find it and send Event
 	q, ok := self.ds.GetQueue(lname)
-	if !ok {
+	if !ok || len(q) == 0{
 		return nil
 	}
-	if q.Len() == 0 {
-		return nil
-	}
-
-	uname := q.Front().Value.(string)
+	uname := q[0]
 
 	// Send out message
 	var reply common.Content
