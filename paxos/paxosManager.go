@@ -181,36 +181,35 @@ func (self *PaxosManager) SetHighestNumPair(np_h common.ProposalNumPair) {
  * send phase3: decide
  * return mid, info
  */
-func (self *PaxosManager) updateView() (int, string) {
-	var mid  int
+func (self *PaxosManager) updateView() string {
 	var info string
 
 	self.Logln("->begin update")
 	// prepare phase
 	info = self.phasePrepare()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Println("paxos", self.Id, "->prepare success")
 
 	// accept phase
 	info = self.phaseAccept()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Println("paxos", self.Id, "->accept success")
 
 	// decide phase
-	mid, info = self.phaseDecide()
+	info = self.phaseDecide()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Print("paxos", self.Id, "->decide success! ")
-	fmt.Print("mid = ", mid)
+	fmt.Print("mid = ", self.v_a)
 	vid, view := self.GetView()
 	fmt.Println(" view = ", vid, view)
 
-	return mid, common.PaxosSuccess
+	return common.PaxosSuccess
 }
 
 // phase1, paxos prepare
@@ -347,6 +346,7 @@ func (self *PaxosManager) phaseAccept() string {
 			// error during paxos
 			// Plan: go on
 		}
+		fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -404,7 +404,7 @@ func (self *PaxosManager) phaseAccept() string {
 // phase3, paxos decide
 // 1. send (vid+1, view, value) to all in view
 // return value, info
-func (self *PaxosManager) phaseDecide() (int, string) {
+func (self *PaxosManager) phaseDecide() string {
 	var ctnt common.Content
 	reply := make([]common.Content, self.Num)
 
@@ -446,7 +446,7 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 			// believe it and restart paxos
 			self.SetView(reply_pb.VID, reply_pb.View)
 			//return -1, common.PaxosRestart
-			return -1, common.PaxosFailure
+			return common.PaxosFailure
 
 		} else if reply_pb.Action == "reject" {
 			// go on
@@ -461,6 +461,6 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 	}
 
 	// decide phase always success
-	 return self.v_a, common.PaxosSuccess
+	 return common.PaxosSuccess
 }
 

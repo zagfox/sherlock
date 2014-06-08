@@ -152,22 +152,25 @@ func (self *ServerView) RequestUpdateView() error {
  * set self state back
  */
 func (self *ServerView) updateView() error {
+	//start update view, set state to be updating
 	fmt.Println("serverview", self.Id, "updating view")
 	self.SetState(common.SrvUpdating)
 
 	// updateview
-	_, info := self.paxosMgr.updateView()
+	info := self.paxosMgr.updateView()
 	for info == common.PaxosRestart {
 		// if info is restart, then do again
 		fmt.Println(self.Id, "get restart info, restart paxos in 1s")
 		time.Sleep(1000 * time.Millisecond)
-		_, info = self.paxosMgr.updateView()
+		info = self.paxosMgr.updateView()
 	}
 	if info != common.PaxosSuccess {
 		fmt.Println("serverview", self.Id, "update fail")
+	} else {
+		// not succeed, do not change state
+		// these value are set in handle_decide
+		//self.SetMasterId(mid)
+		//self.SetState(common.SrvReady)
 	}
-
-	//self.SetMasterId(mid)
-	self.SetState(common.SrvReady)
 	return nil
 }

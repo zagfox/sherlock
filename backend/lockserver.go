@@ -8,6 +8,7 @@ import (
 	//"sync"
 	"log"
 	"time"
+	"math/rand"
 
 	"sherlock/common"
 	"sherlock/lockstore"
@@ -163,6 +164,8 @@ func (self *LockServer) startHeartBeat() {
 			//fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
 			fmt.Println()
 		}
-		time.Sleep(time.Second)
+		// sleep 1000+rand(200)ms
+		rand.Seed(time.Now().UTC().UnixNano())
+		time.Sleep(time.Millisecond*time.Duration(1000+(rand.Int()%200)))
 	}
 }
