@@ -129,32 +129,19 @@ func (self *PaxosManager) NodesInView(nodes []int) int {
 	return num
 }
 
-// Deprecated
-// add/delete node in next view
-func (self *PaxosManager) RequestAddNode(nid int) {
-	self.nvlock.Lock()
-	defer self.nvlock.Unlock()
 
-/*
-	// check if node exist
-	if self.next_view[nid] == 0 {
-		self.next_view[nid] = 1
+// find nodes that not in view
+func (self *PaxosManager) NodesNotInView(nodes []int) []int {
+	retNodes := make([]int, 0)
+	for _, v := range(nodes) {
+		if self.view[v] == 0 {
+			retNodes = append(retNodes, v)
+		}
 	}
-	*/
+	return retNodes
 }
 
-func (self *PaxosManager) RequestDelNode(nid int) {
-	self.nvlock.Lock()
-	defer self.nvlock.Unlock()
 
-	/*
-	//self.Logln("requestDelNode" + "nid=" + strconv.FormatInt(int64(nid), 10))
-	// check if node exist
-	if self.next_view[nid] == 1 {
-		self.next_view[nid] = 0
-	}
-	*/
-}
 
 // function to get accepted value
 func (self *PaxosManager) GetAcceptedValue() (common.ProposalNumPair, int) {

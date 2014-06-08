@@ -137,8 +137,16 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 	}
 
 	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =",pb.ProValue, "view=", pb.VID, pb.View)
+
+	// check if self is master, then transfer data to new node
+	if self.srvView.Id == pb.ProValue {
+		nodes := self.srvView.NodesNotInView(pb.View)
+		for _, v := range(nodes) {
+			//do stuff here
+			fmt.Println(v)
+		}
+	}
 	// set self mid, vid and view, state
-	//TODO, method is too brute here, don't know how to improve
 	self.srvView.SetMasterId(pb.ProValue)
 	self.srvView.SetView(pb.VID, pb.View)
 	self.srvView.SetState(common.SrvReady)

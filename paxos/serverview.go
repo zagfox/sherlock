@@ -75,13 +75,9 @@ func (self *ServerView) NodeInView(nid int) bool {
 	return self.paxosMgr.NodeInView(nid)
 }
 
-// Change Node in View
-func (self *ServerView) RequestAddNode(nid int) {
-	self.paxosMgr.RequestAddNode(nid)
-}
-
-func (self *ServerView) RequestDelNode(nid int) {
-	self.paxosMgr.RequestDelNode(nid)
+// find nodes that not in view
+func (self *ServerView) NodesNotInView(nodes []int) []int {
+	return self.paxosMgr.NodesNotInView(nodes)
 }
 
 // function to operate on cntReq

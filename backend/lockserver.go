@@ -148,12 +148,12 @@ func (self *LockServer) startHeartBeat() {
 			if e != nil {
 				if self.srvView.NodeInView(i) {
 					needUpdate = true
-					self.srvView.RequestDelNode(i)
+					//self.srvView.RequestDelNode(i)
 				}
 			} else {
 				if !self.srvView.NodeInView(i) {
 					needUpdate = true
-					self.srvView.RequestAddNode(i)
+					//self.srvView.RequestAddNode(i)
 				}
 			}
 		}
