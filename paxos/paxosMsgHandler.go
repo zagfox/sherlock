@@ -10,10 +10,11 @@ var _ common.MsgHandlerIf = new(PaxosMsgHandler)
 
 type PaxosMsgHandler struct {
 	srvView *ServerView
+	lg      common.LogPlayerIf
 }
 
-func NewPaxosMsgHandler(srvView *ServerView) common.MsgHandlerIf {
-	return &PaxosMsgHandler{srvView: srvView}
+func NewPaxosMsgHandler(srvView *ServerView, lg common.LogPlayerIf) common.MsgHandlerIf {
+	return &PaxosMsgHandler{srvView: srvView, lg: lg}
 }
 
 // Handle paxos message, ctnt.head is "paxos" already
@@ -56,12 +57,16 @@ func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Co
 		// set n_h
 		self.srvView.SetHighestNumPair(pb.ProNumPair)
 
+		// change, set returned value is logid
+		logId := self.lg.GetLogID()
+
 		// reply it with prepare ok
 		reply.Head = "paxos"
 		reply.Body = PaxosToString(common.PaxosBody{
 			Phase: "prepare", Action: "ok",
 			ProNumPair: np_a,
 			ProValue:   v_a,
+			DecideValue:  logId,
 			VID:        -1, View: nil})
 		return nil
 	} else {

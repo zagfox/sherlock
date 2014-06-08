@@ -237,6 +237,8 @@ func (self *PaxosManager) phasePrepare() string {
 	// record returned value
 	np_tmp := common.ProposalNumPair{-1, -1}  //temp highest n
 	v_tmp := -1          // value corresponding to np_tmp
+	logId_tmp := uint64(0)   // tmp log id
+	logProposerId_tmp := self.Id
 	responders := make([]int, 0)    // keep record to responders
 
 	self.Logln("phasePrepare, sending all messeges")
@@ -272,11 +274,16 @@ func (self *PaxosManager) phasePrepare() string {
 
 		} else if reply_pb.Action == "ok" {
 			responders = append(responders, v)
-			if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
+			/*if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
 				//update np_tmp and v_tmp
 				// also send to itself, so must have value
 				np_tmp = reply_pb.ProNumPair
 				v_tmp = reply_pb.ProValue
+			}*/
+			if reply_pb.DecideValue > logId_tmp {
+				// select it according to max DecideValue
+				logId_tmp = reply_pb.DecideValue
+				logProposerId_tmp = v
 			}
 
 		} else {
@@ -296,10 +303,11 @@ func (self *PaxosManager) phasePrepare() string {
 			np_tmp = self.my_np
 			v_tmp = self.Id
 		}*/
-		// use a brute method, always
-		// and mid is
+		// use a brute method, set accepted value to be own proposal
+		// and mid is the max of replied logid machine
 		np_tmp = self.my_np
-		v_tmp = self.Id
+		//v_tmp = self.Id
+		v_tmp = logProposerId_tmp
 
 		self.SetAcceptedValue(np_tmp, v_tmp)
 		return common.PaxosSuccess
@@ -374,6 +382,15 @@ func (self *PaxosManager) phaseAccept() string {
 	//if majority reply, accept success
 	// set self view to be responders
 	if self.NodesInView(responders) > len(view)/2 {
+		flag := false   // ensure that v_a is in responders
+		for v := range(responders) {
+			if self.v_a == v {
+				flag = true
+			}
+		}
+		if !flag {
+			return common.PaxosFailure
+		}
 		self.responders = responders
 		return common.PaxosSuccess
 	}
