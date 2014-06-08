@@ -129,32 +129,19 @@ func (self *PaxosManager) NodesInView(nodes []int) int {
 	return num
 }
 
-// Deprecated
-// add/delete node in next view
-func (self *PaxosManager) RequestAddNode(nid int) {
-	self.nvlock.Lock()
-	defer self.nvlock.Unlock()
 
-/*
-	// check if node exist
-	if self.next_view[nid] == 0 {
-		self.next_view[nid] = 1
+// find nodes that not in view
+func (self *PaxosManager) NodesNotInView(nodes []int) []int {
+	retNodes := make([]int, 0)
+	for _, v := range(nodes) {
+		if self.view[v] == 0 {
+			retNodes = append(retNodes, v)
+		}
 	}
-	*/
+	return retNodes
 }
 
-func (self *PaxosManager) RequestDelNode(nid int) {
-	self.nvlock.Lock()
-	defer self.nvlock.Unlock()
 
-	/*
-	//self.Logln("requestDelNode" + "nid=" + strconv.FormatInt(int64(nid), 10))
-	// check if node exist
-	if self.next_view[nid] == 1 {
-		self.next_view[nid] = 0
-	}
-	*/
-}
 
 // function to get accepted value
 func (self *PaxosManager) GetAcceptedValue() (common.ProposalNumPair, int) {
@@ -181,36 +168,35 @@ func (self *PaxosManager) SetHighestNumPair(np_h common.ProposalNumPair) {
  * send phase3: decide
  * return mid, info
  */
-func (self *PaxosManager) updateView() (int, string) {
-	var mid  int
+func (self *PaxosManager) updateView() string {
 	var info string
 
 	self.Logln("->begin update")
 	// prepare phase
 	info = self.phasePrepare()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Println("paxos", self.Id, "->prepare success")
 
 	// accept phase
 	info = self.phaseAccept()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Println("paxos", self.Id, "->accept success")
 
 	// decide phase
-	mid, info = self.phaseDecide()
+	info = self.phaseDecide()
 	if info != common.PaxosSuccess {
-		return -1, info
+		return info
 	}
 	fmt.Print("paxos", self.Id, "->decide success! ")
-	fmt.Print("mid = ", mid)
+	fmt.Print("mid = ", self.v_a)
 	vid, view := self.GetView()
 	fmt.Println(" view = ", vid, view)
 
-	return mid, common.PaxosSuccess
+	return common.PaxosSuccess
 }
 
 // phase1, paxos prepare
@@ -237,6 +223,8 @@ func (self *PaxosManager) phasePrepare() string {
 	// record returned value
 	np_tmp := common.ProposalNumPair{-1, -1}  //temp highest n
 	v_tmp := -1          // value corresponding to np_tmp
+	logId_tmp := uint64(0)   // tmp log id
+	logProposerId_tmp := self.Id
 	responders := make([]int, 0)    // keep record to responders
 
 	self.Logln("phasePrepare, sending all messeges")
@@ -272,11 +260,16 @@ func (self *PaxosManager) phasePrepare() string {
 
 		} else if reply_pb.Action == "ok" {
 			responders = append(responders, v)
-			if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
+			/*if reply_pb.ProNumPair.BiggerEqualThan(np_tmp) {
 				//update np_tmp and v_tmp
 				// also send to itself, so must have value
 				np_tmp = reply_pb.ProNumPair
 				v_tmp = reply_pb.ProValue
+			}*/
+			if reply_pb.DecideValue > logId_tmp {
+				// select it according to max DecideValue
+				logId_tmp = reply_pb.DecideValue
+				logProposerId_tmp = v
 			}
 
 		} else {
@@ -296,10 +289,11 @@ func (self *PaxosManager) phasePrepare() string {
 			np_tmp = self.my_np
 			v_tmp = self.Id
 		}*/
-		// use a brute method, always
-		// and mid is
+		// use a brute method, set accepted value to be own proposal
+		// and mid is the max of replied logid machine
 		np_tmp = self.my_np
-		v_tmp = self.Id
+		//v_tmp = self.Id
+		v_tmp = logProposerId_tmp
 
 		self.SetAcceptedValue(np_tmp, v_tmp)
 		return common.PaxosSuccess
@@ -339,6 +333,7 @@ func (self *PaxosManager) phaseAccept() string {
 			// error during paxos
 			// Plan: go on
 		}
+		fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -374,6 +369,15 @@ func (self *PaxosManager) phaseAccept() string {
 	//if majority reply, accept success
 	// set self view to be responders
 	if self.NodesInView(responders) > len(view)/2 {
+		flag := false   // ensure that v_a is in responders
+		for v := range(responders) {
+			if self.v_a == v {
+				flag = true
+			}
+		}
+		if !flag {
+			return common.PaxosFailure
+		}
 		self.responders = responders
 		return common.PaxosSuccess
 	}
@@ -387,7 +391,7 @@ func (self *PaxosManager) phaseAccept() string {
 // phase3, paxos decide
 // 1. send (vid+1, view, value) to all in view
 // return value, info
-func (self *PaxosManager) phaseDecide() (int, string) {
+func (self *PaxosManager) phaseDecide() string {
 	var ctnt common.Content
 	reply := make([]common.Content, self.Num)
 
@@ -429,7 +433,7 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 			// believe it and restart paxos
 			self.SetView(reply_pb.VID, reply_pb.View)
 			//return -1, common.PaxosRestart
-			return -1, common.PaxosFailure
+			return common.PaxosFailure
 
 		} else if reply_pb.Action == "reject" {
 			// go on
@@ -444,6 +448,6 @@ func (self *PaxosManager) phaseDecide() (int, string) {
 	}
 
 	// decide phase always success
-	 return self.v_a, common.PaxosSuccess
+	 return common.PaxosSuccess
 }
 

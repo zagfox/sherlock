@@ -14,6 +14,7 @@ type PaxosBody struct {
 	//ProposerId     int      //id of proposer
 	ProNumPair     ProposalNumPair		//n
 	ProValue       int      //v
+	DecideValue    uint64   // a trick here, use decide value to select master
 	VID            int      //vid
 	View           []int    //view
 }

@@ -1,4 +1,4 @@
-//Log file struct, used in 2pc
+// Log file struct, used in 2pc
 package lockstore
 
 import (

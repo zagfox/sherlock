@@ -27,7 +27,7 @@ func TestLockServerBasic(t *testing.T) {
 
 	alive := make([]int, 5)
 	//Start Backs
-	bin_path := "/classes/cse223b/sp14/cse223y4duan/gopath/bin/"
+	bin_path := "/classes/cse223b/sp14/cse223f7zhu/gopath/bin/"
 	servers := make([]*exec.Cmd, 10)
 	for i := 0; i < 5; i++ {
 		servers[i] = exec.Command(bin_path+"ls-server", strconv.FormatInt((int64)(i), 10))

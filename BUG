@@ -1,4 +1,5 @@
+3. paxos too slow, add random time heart beat
 
-2. there are 5 servers, 2 is running, not forming a view. start 3 together, get stuck
+fixed, test script error. 2. there are 5 servers, 2 is running, not forming a view. start 3 together, get stuck
 
 fixed 1. restart server, client call rpc. Result in "too many open files"

@@ -15,7 +15,7 @@ type ServerMsgHandler struct {
 }
 
 func NewServerMsgHandler(srvView *paxos.ServerView, lg *lockstore.LogPlayer) common.MsgHandlerIf {
-	paxosHandler := paxos.NewPaxosMsgHandler(srvView)
+	paxosHandler := paxos.NewPaxosMsgHandler(srvView, lg)
 	tpcHandler := NewTpcMsgHandler(lg, srvView)
 	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler}
 }
