@@ -3,9 +3,9 @@ package frontend
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 	//"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
@@ -13,22 +13,22 @@ import (
 
 // struct that used by user
 type lockclient struct {
-	saddrs []string            //addr of its server
-	mid    int		           //id of master server
-	midLock sync.Mutex          //lock for sid
-	clts   []common.LockStoreIf //client to call lock rpc
+	saddrs  []string             //addr of its server
+	mid     int                  //id of master server
+	midLock sync.Mutex           //lock for sid
+	clts    []common.LockStoreIf //client to call lock rpc
 
-	laddr string			//addr for client listening
-	lpid int                //pid for listen thread
+	laddr string //addr for client listening
+	lpid  int    //pid for listen thread
 
 	// give channel to every lock
-	mAcqChan map[common.LUpair]chan string       //Chan to receive acq, release events from server
+	mAcqChan map[common.LUpair]chan string //Chan to receive acq, release events from server
 }
 
 func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	// create clt that connects to all servers
 	clts := make([]common.LockStoreIf, len(saddrs))
-	for i, saddr := range(saddrs) {
+	for i, saddr := range saddrs {
 		clts[i] = NewClient(saddr)
 	}
 
@@ -36,7 +36,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	mAcqChan := make(map[common.LUpair]chan string)
 
 	// Create lockclient
-	lc := lockclient{saddrs:saddrs, mid:0, clts:clts, laddr:laddr, mAcqChan:mAcqChan}
+	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan}
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -85,16 +85,16 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		self.mAcqChan[lu] = make(chan string, common.ChSize)
 	}
 
-	// find a machine that could be connected 
+	// find a machine that could be connected
 	var mid int
 	var err error
 	for {
 		mid = self.getMid()
 		err = self.clts[mid].Acquire(lu, reply)
 
-		if err != nil{
+		if err != nil {
 			fmt.Println("mid=", mid, "network error, change mid")
-			self.setMid(mid+1)
+			self.setMid(mid + 1)
 			continue
 		}
 
@@ -115,9 +115,9 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 	// handle reply Head
 	switch reply.Head {
 	case "LockQueuing":
-	// in normal case, request goes to log, return this
+		// in normal case, request goes to log, return this
 		ch, _ := self.mAcqChan[lu]
-		<-ch    // channel must have been set up
+		<-ch // channel must have been set up
 		reply.Head = "LockAcquiredByEvent"
 	default:
 	}
@@ -128,15 +128,15 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 	//set lu username
 	lu.Username = self.laddr
 
-	// find a machine that could be connected 
+	// find a machine that could be connected
 	var mid int
 	var err error
 	for {
 		mid = self.getMid()
 		err = self.clts[mid].Release(lu, reply)
 
-		if err != nil{
-			self.setMid(mid+1)
+		if err != nil {
+			self.setMid(mid + 1)
 			continue
 		}
 

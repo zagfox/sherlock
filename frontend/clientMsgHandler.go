@@ -7,15 +7,15 @@ import (
 )
 
 type ClientMsgHandler struct {
-	laddr string
+	laddr    string
 	mAcqChan map[common.LUpair]chan string //channel wait for acquire ok
 }
 
 func NewClientMsgHandler(laddr string, mAcqChan map[common.LUpair]chan string) common.MsgHandlerIf {
-	return &ClientMsgHandler{laddr:laddr, mAcqChan:mAcqChan}
+	return &ClientMsgHandler{laddr: laddr, mAcqChan: mAcqChan}
 }
 
-func (self *ClientMsgHandler) Handle(ctnt common.Content, reply *common.Content) error  {
+func (self *ClientMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	// Examine the content
 	switch ctnt.Head {
 	case "LockAcquired":

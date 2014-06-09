@@ -109,7 +109,7 @@ func (self *LockServer) startLockService() {
 func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
-	msghandler := NewServerMsgHandler(self.srvView, self.lg)
+	msghandler := NewServerMsgHandler(self.srvView, self.ds, self.lg)
 	msglistener := message.NewMsgListener(msghandler)
 	ready := make(chan bool, 1)
 

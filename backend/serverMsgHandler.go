@@ -15,10 +15,10 @@ type ServerMsgHandler struct {
 	handleTransfer  common.MsgHandlerIf
 }
 
-func NewServerMsgHandler(srvView *paxos.ServerView, lg *lockstore.LogPlayer) common.MsgHandlerIf {
+func NewServerMsgHandler(srvView *paxos.ServerView, ds common.DataStoreIf, lg *lockstore.LogPlayer) common.MsgHandlerIf {
 	paxosHandler := paxos.NewPaxosMsgHandler(srvView, lg)
 	tpcHandler := NewTpcMsgHandler(lg, srvView)
-	handleTransfer := NewTransferMsgHandler(srvView, lg)
+	handleTransfer := NewTransferMsgHandler(srvView, ds, lg)
 	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler, handleTransfer: handleTransfer}
 }
 

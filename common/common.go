@@ -41,6 +41,7 @@ type DataStoreIf interface {
 	// get all information
 	GetAll() map[string] []string
 
+	// apply wrap
 	ApplyWraper(sw StoreWraper)
 }
 
