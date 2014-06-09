@@ -1,9 +1,5 @@
 package common
 
-import (
-	"container/list"
-)
-
 type LUpair struct {
 	Lockname string
 	Username string
@@ -34,13 +30,18 @@ type LockStoreIf interface {
 // Interface to a data storage
 type DataStoreIf interface {
 	// get the whole queue
-	GetQueue(qname string) (*list.List, bool)
+	GetQueue(qname string) ([]string, bool)
 
 	// append item to queue end
 	AppendQueue(qname, item string) bool
 
 	// pop queue's first item
 	PopQueue(qname, uname string) (string, bool)
+
+	// get all information
+	GetAll() map[string] []string
+
+	ApplyWarper(sw StoreWarper)
 }
 
 // Backend config

@@ -4,7 +4,6 @@ package lockstore
 import (
 	"fmt"
 //	"errors"
-	"container/list"
 //	"sync"
 	"encoding/json"
 
@@ -43,10 +42,9 @@ func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataSt
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
-	b, e := json.Marshal(*self.ds)
+	b, e := json.Marshal(self.lg.GetStoreWarper())
 	fmt.Println(e)
 	fmt.Println(string(b))
-	fmt.Println(*self.ds)
 	// check if server is ready
 	state := self.srvView.GetState()
 	//fmt.Println("lockserver", state)
@@ -107,7 +105,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 
 	//if found it and name is correct, release it
 	//fmt.Println(q.Front().Value.(string))
-	if q.Front().Value.(string) == uname {
+	if q[0] == uname {
 		reply.Head = "LockReleased"
 		self.popQueue(lname, uname)
 	} else {
@@ -121,21 +119,16 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	if cList == nil {
 		return nil
 	}
-	cList.L = make([]string, 0)
-
 	q, ok := self.getQueue(lname)
 	if !ok {
 		return nil
 	}
-
-	for v := q.Front(); v != nil; v = v.Next() {
-		cList.L = append(cList.L, v.Value.(string))
-	}
+	cList.L = q
 	return nil
 }
 
 // private function own by LockStore
-func (self *LockStore) getQueue(lname string) (*list.List, bool) {
+func (self *LockStore) getQueue(lname string) ([]string, bool) {
 	return self.ds.GetQueue(lname)
 }
 
