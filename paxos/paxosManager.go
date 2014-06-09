@@ -2,7 +2,7 @@ package paxos
 
 import (
 	"fmt"
-	"math"
+	//"math"
 	"sync"
 	//"strconv"
 	"sherlock/common"
@@ -208,8 +208,13 @@ func (self *PaxosManager) phasePrepare() string {
 	ctnt.Head = "paxos"
 
 	// generate my_n
-	ProNum := int(math.Max(float64(self.my_np.ProposalNum), float64(vid))) + 1
-	self.my_np = common.ProposalNumPair{ProNum, self.Id}
+	//ProNum := int(math.Max(float64(self.my_np.ProposalNum), float64(vid))) + 1
+	//self.my_np = common.ProposalNumPair{ProNum, self.Id}
+	np_h := self.GetHighestNumPair()
+	if np_h.BiggerEqualThan(self.my_np) {
+		self.my_np = np_h
+		self.my_np.ProposalNum++
+	}
 	ctnt.Body = PaxosToString(common.PaxosBody{
 		Phase: "prepare", Action: "request",
 		ProNumPair: self.my_np,
@@ -223,6 +228,7 @@ func (self *PaxosManager) phasePrepare() string {
 	logProposerId_tmp := self.Id
 	responders := make([]int, 0) // keep record to responders
 
+	fmt.Println(ctnt)
 	self.Logln("phasePrepare, sending all messeges")
 	//send pprepare to everyone
 	ch_finish := make(chan string, self.Num)
@@ -329,7 +335,7 @@ func (self *PaxosManager) phaseAccept() string {
 			// error during paxos
 			// Plan: go on
 		}
-		fmt.Println(reply[v])
+		//fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 

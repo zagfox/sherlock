@@ -133,6 +133,12 @@ func (self *ServerView) SendMsg(recv int, ctnt common.Content, reply *common.Con
 
 // request to update view
 func (self *ServerView) RequestUpdateView() error {
+	/*
+	// if self is not updating
+	if self.GetState() == common.SrvUpdating {
+		return errors.New("already updating")
+	}
+	*/
 
 	cntReq := self.getCntReq()
 	if cntReq == 0 {

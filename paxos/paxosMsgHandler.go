@@ -55,7 +55,7 @@ func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Co
 		// set self state to be updating
 		self.srvView.SetState(common.SrvUpdating)
 
-		// set n_h
+		// set np_h
 		self.srvView.SetHighestNumPair(pb.ProNumPair)
 
 		// change, set returned value is logid
@@ -75,7 +75,8 @@ func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Co
 		reply.Head = "paxos"
 		reply.Body = PaxosToString(common.PaxosBody{
 			Phase: "prepare", Action: "reject",
-			ProNumPair: common.ProposalNumPair{-1, -1},
+			//ProNumPair: common.ProposalNumPair{-1, -1},
+			ProNumPair: np_h,
 			ProValue:   -1,
 			VID:        -1, View: nil})
 		return nil
@@ -116,7 +117,8 @@ func (self *PaxosMsgHandler) HandleAccept(pb common.PaxosBody, reply *common.Con
 		reply.Head = "paxos"
 		reply.Body = PaxosToString(common.PaxosBody{
 			Phase: "accept", Action: "reject",
-			ProNumPair: common.ProposalNumPair{-1, -1},
+			ProNumPair: np_h,
+			//ProNumPair: common.ProposalNumPair{-1, -1},
 			ProValue:   -1,
 			VID:        -1, View: nil})
 		return nil

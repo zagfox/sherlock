@@ -46,9 +46,13 @@ func TestLockServerBasic(t *testing.T) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	for {
 		id = rand.Int() % 5
-		if alive[id] == 1 && aliveNum(alive) > 2{
-			servers[id].Process.Kill()
-			alive[id] = 0
+		if alive[id] == 1{
+			if aliveNum(alive) > 2 {
+				servers[id].Process.Kill()
+				alive[id] = 0
+			} else {
+				continue
+			}
 		} else {
 			servers[id] = exec.Command(bin_path+"ls-server", strconv.FormatInt((int64)(id), 10))
 			servers[id].Start()
