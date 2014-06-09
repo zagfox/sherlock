@@ -10,14 +10,16 @@ import (
 var _ common.MsgHandlerIf = new(ServerMsgHandler)
 
 type ServerMsgHandler struct {
-	handle2pc   common.MsgHandlerIf
-	handlePaxos common.MsgHandlerIf
+	handle2pc       common.MsgHandlerIf
+	handlePaxos     common.MsgHandlerIf
+	handleTransfer  common.MsgHandlerIf
 }
 
 func NewServerMsgHandler(srvView *paxos.ServerView, lg *lockstore.LogPlayer) common.MsgHandlerIf {
 	paxosHandler := paxos.NewPaxosMsgHandler(srvView, lg)
 	tpcHandler := NewTpcMsgHandler(lg, srvView)
-	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler}
+	handleTransfer := NewTransferMsgHandler(srvView, lg)
+	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler, handleTransfer: handleTransfer}
 }
 
 func (self *ServerMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
@@ -30,6 +32,8 @@ func (self *ServerMsgHandler) Handle(ctnt common.Content, reply *common.Content)
 		return self.handle2pc.Handle(ctnt, reply)
 	case "paxos":
 		return self.handlePaxos.Handle(ctnt, reply)
+	case "transfer":
+		return self.handleTransfer.Handle(ctnt, reply)
 	}
 	return nil
 }

@@ -39,7 +39,7 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 	srvView := paxos.NewServerView(bc.Id, len(bc.Peers), 0, common.SrvReady, srvs)
 
 	msg := message.NewMsgClientFactory()
-	// data  store and lock store
+	// data  store and lock store, and log store
 	ds := lockstore.NewDataStore()
 	lg := lockstore.NewLogPlayer(ds, srvView, msg)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)

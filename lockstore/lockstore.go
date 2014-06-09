@@ -42,7 +42,7 @@ func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataSt
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
-	b, e := json.Marshal(self.lg.GetStoreWarper())
+	b, e := json.Marshal(self.lg.GetStoreWraper())
 	fmt.Println(e)
 	fmt.Println(string(b))
 	// check if server is ready

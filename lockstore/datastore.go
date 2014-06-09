@@ -24,7 +24,7 @@ func (self *DataStore)GetAll() map[string] []string{
 	return locks
 }
 
-func (self *DataStore)ApplyWarper(sw common.StoreWarper){
+func (self *DataStore)ApplyWraper(sw common.StoreWraper){
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	self.mqueue = make(map[string] []string)

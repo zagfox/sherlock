@@ -31,12 +31,12 @@ type LogPlayer struct{
 	msg *message.MsgClientFactory
 }
 
-func (self *LogPlayer)GetStoreWarper() common.StoreWarper{
+func (self *LogPlayer)GetStoreWraper() common.StoreWraper{
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
 	self.idLock.Lock()
 	defer self.idLock.Unlock()
-	sw := common.StoreWarper{}
+	sw := common.StoreWraper{}
 	sw.Locks = self.ds.GetAll()
 	logs := make([]common.Log, len(self.Log))
 	for i, v := range self.Log{
@@ -49,7 +49,7 @@ func (self *LogPlayer)GetStoreWarper() common.StoreWarper{
 	return sw
 }
 
-func (self *LogPlayer)ApplyWarper(sw common.StoreWarper){
+func (self *LogPlayer)ApplyWraper(sw common.StoreWraper){
 	self.LogLock.Lock()
 	defer self.LogLock.Unlock()
 	self.idLock.Lock()

@@ -1,6 +1,7 @@
 package paxos
 
 import (
+	"encoding/json"
 	"fmt"
 	//"time"
 	"sherlock/common"
@@ -64,10 +65,10 @@ func (self *PaxosMsgHandler) HandlePrepare(pb common.PaxosBody, reply *common.Co
 		reply.Head = "paxos"
 		reply.Body = PaxosToString(common.PaxosBody{
 			Phase: "prepare", Action: "ok",
-			ProNumPair: np_a,
-			ProValue:   v_a,
-			DecideValue:  logId,
-			VID:        -1, View: nil})
+			ProNumPair:  np_a,
+			ProValue:    v_a,
+			DecideValue: logId,
+			VID:         -1, View: nil})
 		return nil
 	} else {
 		// reject
@@ -136,16 +137,29 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 		return nil
 	}
 
-	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =",pb.ProValue, "view=", pb.VID, pb.View)
+	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =", pb.ProValue, "view=", pb.VID, pb.View)
 
 	// check if self is master, then transfer data to new node
 	if self.srvView.Id == pb.ProValue {
 		nodes := self.srvView.NodesNotInView(pb.View)
-		for _, v := range(nodes) {
-			//do stuff here
-			fmt.Println(v)
+		if len(nodes) != 0 {
+
+			// prepare send message
+			var ctnt, reply common.Content
+			bytes, _ := json.Marshal(self.lg.GetStoreWraper())
+			ctnt.Head = "transfer"
+			ctnt.Body = string(bytes)
+
+			// send message
+			for _, v := range nodes {
+				err := self.srvView.SendMsg(v, ctnt, &reply)
+				if err != nil {
+					fmt.Println("paxos msg handler", self.srvView.Id, "handle decide")
+				}
+			}
 		}
 	}
+
 	// set self mid, vid and view, state
 	self.srvView.SetMasterId(pb.ProValue)
 	self.srvView.SetView(pb.VID, pb.View)

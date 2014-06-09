@@ -41,7 +41,7 @@ type DataStoreIf interface {
 	// get all information
 	GetAll() map[string] []string
 
-	ApplyWarper(sw StoreWarper)
+	ApplyWraper(sw StoreWraper)
 }
 
 // Backend config

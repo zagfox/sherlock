@@ -126,12 +126,17 @@ func (self *ServerView) SetState(state string) {
 	self.state = state
 }
 
+// function to send message to a server
+func (self *ServerView) SendMsg(recv int, ctnt common.Content, reply *common.Content) error {
+	return self.srvs[recv].Msg(ctnt, reply)
+}
+
 // request to update view
 func (self *ServerView) RequestUpdateView() error {
 
 	cntReq := self.getCntReq()
 	if cntReq == 0 {
-		self.setCntReq(cntReq+1)
+		self.setCntReq(cntReq + 1)
 		self.updateView()
 		self.setCntReq(0)
 		return nil
