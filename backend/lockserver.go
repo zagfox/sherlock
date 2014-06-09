@@ -68,7 +68,7 @@ func (self *LockServer) Start() {
 	// Start a thread to reply log
 	go self.startLogPlayer()
 
-	go self.startHeartBeat()
+	go self.startViewChecker()
 
 	/*
 		if self.bc.Ready != nil {
@@ -135,13 +135,11 @@ func (self *LockServer) startLogPlayer() {
 	self.lg.Serve()
 }
 
-func (self *LockServer) startHeartBeat() {
-	/*if self.srvView.Id != 0 {
-		return
-	}*/
-	fmt.Println("In heart beat")
+func (self *LockServer) startViewChecker() {
+	fmt.Println("In view checker")
 	var ctnt, reply common.Content
 	for {
+		// check if the view needs update`
 		needUpdate := false
 		for i, srv := range self.srvs {
 			e := srv.Msg(ctnt, &reply)
@@ -158,6 +156,7 @@ func (self *LockServer) startHeartBeat() {
 			}
 		}
 		if needUpdate {
+			// update using paxos
 			//vid, view := self.srvView.GetView()
 			//fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
 			self.srvView.RequestUpdateView()
@@ -166,6 +165,6 @@ func (self *LockServer) startHeartBeat() {
 		}
 		// sleep 1000+rand(200)ms
 		rand.Seed(time.Now().UTC().UnixNano())
-		time.Sleep(time.Millisecond*time.Duration(1000+(rand.Int()%200)))
+		time.Sleep(time.Millisecond*time.Duration(1000+(rand.Int()%500)))
 	}
 }

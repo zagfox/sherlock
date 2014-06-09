@@ -104,7 +104,6 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	}
 
 	//if found it and name is correct, release it
-	//fmt.Println(q.Front().Value.(string))
 	if q[0] == uname {
 		reply.Head = "LockReleased"
 		self.popQueue(lname, uname)

@@ -14,14 +14,10 @@ type DataStore struct {
 	mqueue map[string] []string
 }
 
-func (self *DataStore)GetAll() map[string] []string{
-	self.lock.Lock()
-	defer self.lock.Unlock()
-	locks := make(map[string] []string)
-	for k, v := range self.mqueue {
-		locks[k] = v[:]
+func NewDataStore() *DataStore {
+	return &DataStore{
+		mqueue: make(map[string] []string),
 	}
-	return locks
 }
 
 func (self *DataStore)ApplyWraper(sw common.StoreWraper){
@@ -33,10 +29,14 @@ func (self *DataStore)ApplyWraper(sw common.StoreWraper){
 	}
 }
 
-func NewDataStore() *DataStore {
-	return &DataStore{
-		mqueue: make(map[string] []string),
+func (self *DataStore)GetAll() map[string] []string{
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	locks := make(map[string] []string)
+	for k, v := range self.mqueue {
+		locks[k] = v[:]
 	}
+	return locks
 }
 
 func (self *DataStore) GetQueue(qname string) ([]string, bool) {

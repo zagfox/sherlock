@@ -327,6 +327,8 @@ func (self *PaxosManager) phaseAccept() string {
 	num_tmp := 0                 //the response get
 	responders := make([]int, 0) // keep record to responders
 
+	fmt.Println(ctnt)
+	self.Logln("phasePrepare, sending all messeges")
 	//send pprepare to everyone
 	ch_finish := make(chan string, self.Num)
 	for v := 0; v < self.Num; v++ {
@@ -335,7 +337,7 @@ func (self *PaxosManager) phaseAccept() string {
 			// error during paxos
 			// Plan: go on
 		}
-		//fmt.Println(reply[v])
+		fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -371,13 +373,15 @@ func (self *PaxosManager) phaseAccept() string {
 	//if majority reply, accept success
 	// set self view to be responders
 	if self.NodesInView(responders) > len(view)/2 {
+		fmt.Println("receive from majority", self.v_a, responders)
 		flag := false // ensure that v_a is in responders
-		for v := range responders {
+		for _, v := range responders {
 			if self.v_a == v {
 				flag = true
 			}
 		}
 		if !flag {
+			fmt.Println("mid not in responders", self.v_a, responders)
 			return common.PaxosFailure
 		}
 		self.responders = responders

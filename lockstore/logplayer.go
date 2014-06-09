@@ -246,7 +246,7 @@ func (self *LogPlayer) notify(lname string) error {
 	return nil
 }
 
-func (self *LogPlayer) Serve(){
+func (self *LogPlayer) Serve() {
 	for {
 		<-self.ready
 		self.play()
