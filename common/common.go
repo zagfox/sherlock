@@ -23,6 +23,9 @@ type LockStoreIf interface {
 	// Release a lock, input should be {lname, unmae}
 	Release(lu LUpair, reply *Content) error
 
+	// Show the locks own by a client
+	ListLock(uname string, cList *List) error
+
 	// Show the lock acquire queue
 	ListQueue(lname string, cList *List) error
 }
@@ -66,6 +69,7 @@ type MsgConfig struct {
 	Ready       chan bool
 }
 
+// Interface for message handler
 type MsgHandlerIf interface {
 	Handle(ctnt Content, reply *Content) error
 }

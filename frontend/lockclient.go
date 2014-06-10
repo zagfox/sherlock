@@ -20,9 +20,9 @@ type lockclient struct {
 
 	laddr string //addr for client listening
 	lpid  int    //pid for listen thread
-
-	// give channel to every lock
 	mAcqChan map[common.LUpair]chan string //Chan to receive acq, release events from server
+
+	mlocks map[string]bool    // map to identify what lock it has
 }
 
 func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
@@ -35,8 +35,10 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	// acqOK channel, waiting for event of lock release
 	mAcqChan := make(map[common.LUpair]chan string)
 
+	mlocks := make(map[string]bool)
+
 	// Create lockclient
-	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan}
+	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan, mlocks:mlocks}
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -119,6 +121,9 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		ch, _ := self.mAcqChan[lu]
 		<-ch // channel must have been set up
 		reply.Head = "LockAcquiredByEvent"
+
+		//mark that lock is acquired
+		self.mlocks[lu.Lockname] = true
 	default:
 	}
 	return nil
@@ -156,6 +161,7 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 	// handle reply Head
 	switch reply.Head {
 	default:
+		delete(self.mlocks, lu.Lockname)
 	}
 
 	return nil
@@ -164,6 +170,23 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 func (self *lockclient) ListQueue(lname string, cList *common.List) error {
 	mid := self.getMid()
 	return self.clts[mid].ListQueue(lname, cList)
+}
+
+func (self *lockclient) ListLock(uname string, cList *common.List) error {
+	self.ListLocalLock()
+
+	mid := self.getMid()
+	return self.clts[mid].ListLock(uname, cList)
+}
+//not an rpc interface, check lock locks
+func (self *lockclient) ListLocalLock() error {
+	var cList common.List
+	cList.L = make([]string, 0)
+	for k,_ := range(self.mlocks) {
+		cList.L = append(cList.L, k)
+	}
+	fmt.Println("showLocalLock", cList.L)
+	return nil
 }
 
 var _ common.LockStoreIf = new(lockclient)

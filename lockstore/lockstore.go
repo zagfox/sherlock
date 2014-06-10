@@ -126,6 +126,14 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	return nil
 }
 
+func (self *LockStore) ListLock(uname string, cList *common.List) error {
+	if cList == nil {
+		return nil
+	}
+
+	return nil
+}
+
 // private function own by LockStore
 func (self *LockStore) getQueue(lname string) ([]string, bool) {
 	return self.ds.GetQueue(lname)

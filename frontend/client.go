@@ -99,3 +99,19 @@ func (self *client) ListQueue(lname string, cList *common.List) error {
 
 	return nil
 }
+
+func (self *client) ListLock(uname string, cList *common.List) error {
+	if e := self.connect(true); e != nil {
+		return e
+	}
+
+	e := self.srv.Call("LockStore.ListLock", uname, cList)
+	for ; e != nil; e = self.srv.Call("LockStore.ListLock", uname, cList) {
+		fmt.Println(e)
+		if e = self.connect(false); e != nil {
+			return e
+		}
+	}
+
+	return nil
+}

@@ -51,6 +51,9 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 	case "q":
 		logError(s.ListQueue(args[1], &cList))
 		fmt.Println(cList)
+	case "l":
+		logError(s.ListLock(lu.Username, &cList))
+		fmt.Println(cList)
 	default:
 		logError(fmt.Errorf("bad command, try \"help\"."))
 	}
