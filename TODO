@@ -1,4 +1,8 @@
-3. paxos too slow, add random time heart beat
+lock lease, client send, server also check
+
+after transfer data, reply log
+
+fixed, 3. paxos too slow, add random time heart beat
 
 fixed, test script error. 2. there are 5 servers, 2 is running, not forming a view. start 3 together, get stuck
 
