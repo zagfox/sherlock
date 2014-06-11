@@ -198,6 +198,7 @@ func (self *lockclient) ListQueue(lname string, cList *common.List) error {
 }
 
 func (self *lockclient) ListLock(uname string, cList *common.List) error {
+//func (self *lockclient) ListLock(uname string, reply *common.Content) error {
 	//self.ListLocalLock()
 
 	uname = self.laddr
