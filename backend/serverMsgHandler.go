@@ -3,7 +3,7 @@ package backend
 import (
 //	"fmt"
 	"sherlock/common"
-	"sherlock/lockstore"
+//	"sherlock/lockstore"
 	"sherlock/paxos"
 )
 
@@ -15,8 +15,8 @@ type ServerMsgHandler struct {
 	handleTransfer  common.MsgHandlerIf
 }
 
-func NewServerMsgHandler(srvView *paxos.ServerView, ds common.DataStoreIf, lg *lockstore.LogPlayer) common.MsgHandlerIf {
-	paxosHandler := paxos.NewPaxosMsgHandler(srvView, lg)
+func NewServerMsgHandler(srvView *paxos.ServerView, ds common.DataStoreIf, lg common.LogPlayerIf, tpc common.TPC) common.MsgHandlerIf {
+	paxosHandler := paxos.NewPaxosMsgHandler(srvView, lg, tpc)
 	tpcHandler := NewTpcMsgHandler(lg, srvView)
 	handleTransfer := NewTransferMsgHandler(srvView, ds, lg)
 	return &ServerMsgHandler{handlePaxos: paxosHandler, handle2pc: tpcHandler, handleTransfer: handleTransfer}

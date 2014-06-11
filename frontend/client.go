@@ -43,8 +43,8 @@ func (self *client) Acquire(lu common.LUpair, reply *common.Content) error {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.Acquire", lu, reply)
-	for ; e != nil; e = self.srv.Call("LockStore.Acquire", lu, reply) {
+	e := self.srv.Call("LockStoreStub.Acquire", lu, reply)
+	for ; e != nil; e = self.srv.Call("LockStoreStub.Acquire", lu, reply) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
@@ -58,8 +58,8 @@ func (self *client) Release(lu common.LUpair, reply *common.Content) error {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.Release", lu, reply)
-	for ; e != nil; e = self.srv.Call("LockStore.Release", lu, reply) {
+	e := self.srv.Call("LockStoreStub.Release", lu, reply)
+	for ; e != nil; e = self.srv.Call("LockStoreStub.Release", lu, reply) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
@@ -74,8 +74,8 @@ func (self *client) ListEntry(lname string, uname *string) error {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.ListEntry", lname, uname)
-	for ; e != nil; e = self.srv.Call("LockStore.ListEntry", lname, uname) {
+	e := self.srv.Call("LockStoreStub.ListEntry", lname, uname)
+	for ; e != nil; e = self.srv.Call("LockStoreStub.ListEntry", lname, uname) {
 		if e = self.connect(false); e != nil {
 			return e
 		}
@@ -89,8 +89,8 @@ func (self *client) ListQueue(lname string, cList *common.List) error {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.ListQueue", lname, cList)
-	for ; e != nil; e = self.srv.Call("LockStore.ListQueue", lname, cList) {
+	e := self.srv.Call("LockStoreStub.ListQueue", lname, cList)
+	for ; e != nil; e = self.srv.Call("LockStoreStub.ListQueue", lname, cList) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e
@@ -105,8 +105,8 @@ func (self *client) ListLock(uname string, cList *common.List) error {
 		return e
 	}
 
-	e := self.srv.Call("LockStore.ListLock", uname, cList)
-	for ; e != nil; e = self.srv.Call("LockStore.ListLock", uname, cList) {
+	e := self.srv.Call("LockStoreStub.ListLock", uname, cList)
+	for ; e != nil; e = self.srv.Call("LockStoreStub.ListLock", uname, cList) {
 		fmt.Println(e)
 		if e = self.connect(false); e != nil {
 			return e

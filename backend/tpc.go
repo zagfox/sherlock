@@ -4,18 +4,22 @@ import (
 //	"fmt"
 
 	"sherlock/common"
-	"sherlock/lockstore"
+//	"sherlock/lockstore"
 	"sherlock/paxos"
+
+	"sync"
 )
 
 var _ common.MsgHandlerIf = new(TpcMsgHandler)
 
 type TpcMsgHandler struct {
-	lg *lockstore.LogPlayer
+	lg common.LogPlayerIf
 	view *paxos.ServerView
+
+	lock sync.Mutex
 }
 
-func NewTpcMsgHandler(lg *lockstore.LogPlayer, view *paxos.ServerView) common.MsgHandlerIf {
+func NewTpcMsgHandler(lg common.LogPlayerIf, view *paxos.ServerView) common.MsgHandlerIf {
 	return &TpcMsgHandler{ lg:lg, view:view }
 }
 
@@ -23,8 +27,8 @@ func NewTpcMsgHandler(lg *lockstore.LogPlayer, view *paxos.ServerView) common.Ms
 func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	// get lock of the logs, so it won't be changed by the log player
 	// also make sure only one message is being handled at a time
-	self.lg.LogLock.Lock()
-	defer self.lg.LogLock.Unlock()
+	self.lock.Lock()
+	defer self.lock.Unlock()
 	msg := common.ParseString(ctnt.Body)
 	// discard the message if it is from previous view or it is before the GLB
 	vid, _ := self.view.GetView()
@@ -38,7 +42,8 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 	//Updates GLB
 	self.lg.UpdateGLB(msg.LB)
 	//go through the log and check the status of this log request
-	for _, log := range self.lg.Log{
+	logs := self.lg.GetLogs()
+	for _, log := range logs{
 		if log.SN == serial {
 			switch log.Phase{
 				case "prepare":

@@ -12,6 +12,22 @@ import (
 	"sync"
 )
 
+var _ common.LogPlayerIf = new(LogPlayer)
+
+func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView, msg *message.MsgClientFactory) common.LogPlayerIf{
+	lg := &LogPlayer{
+		Log: make([]*common.Log, 0),
+		ds: data,
+		ready: make(chan bool, 1),
+		logcount: uint64(0),
+		glb: uint64(0),
+		lb: uint64(0),
+		view: view,
+		msg: msg,
+	}
+	return lg
+}
+
 type LogPlayer struct{
 	// expose Log
 	Log common.LogSlice			//The logs, updated by 2PC
@@ -29,6 +45,12 @@ type LogPlayer struct{
 	view *paxos.ServerView
 
 	msg *message.MsgClientFactory
+}
+
+func (self *LogPlayer)GetLogs() common.LogSlice{
+	self.LogLock.Lock()
+	defer self.LogLock.Unlock()
+	return self.Log
 }
 
 func (self *LogPlayer)GetStoreWraper() common.StoreWraper{
@@ -62,20 +84,6 @@ func (self *LogPlayer)ApplyWraper(sw common.StoreWraper){
 	self.logcount = sw.Logcount
 	self.lb = sw.LB
 	self.glb = sw.GLB
-}
-
-func NewLogPlayer(data common.DataStoreIf, view *paxos.ServerView, msg *message.MsgClientFactory) *LogPlayer{
-	lg := &LogPlayer{
-		Log: make([]*common.Log, 0),
-		ds: data,
-		ready: make(chan bool, 1),
-		logcount: uint64(0),
-		glb: uint64(0),
-		lb: uint64(0),
-		view: view,
-		msg: msg,
-	}
-	return lg
 }
 
 //Get the next log ID
@@ -127,8 +135,8 @@ func (self *LogPlayer) updateLogID(sn uint64){
 
 //Append the log
 func (self *LogPlayer) AppendLog(msg common.Log){
-//	self.LogLock.Lock()
-//	defer self.LogLock.Unlock()
+	self.LogLock.Lock()
+	defer self.LogLock.Unlock()
 	self.Log = append(self.Log, &msg)
 	//Update the logcount
 	self.updateLogID(msg.SN)
@@ -252,3 +260,4 @@ func (self *LogPlayer) Serve() {
 		self.play()
 	}
 }
+

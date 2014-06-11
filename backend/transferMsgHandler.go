@@ -3,7 +3,7 @@ package backend
 import (
 	"encoding/json"
 	"sherlock/common"
-	"sherlock/lockstore"
+//	"sherlock/lockstore"
 	"sherlock/paxos"
 )
 
@@ -12,10 +12,10 @@ var _ common.MsgHandlerIf = new(TransferMsgHandler)
 type TransferMsgHandler struct {
 	view *paxos.ServerView
 	ds common.DataStoreIf
-	lg *lockstore.LogPlayer
+	lg common.LogPlayerIf
 }
 
-func NewTransferMsgHandler(view *paxos.ServerView, ds common.DataStoreIf, lg *lockstore.LogPlayer) common.MsgHandlerIf {
+func NewTransferMsgHandler(view *paxos.ServerView, ds common.DataStoreIf, lg common.LogPlayerIf) common.MsgHandlerIf {
 	return &TransferMsgHandler{view:view, ds:ds, lg:lg}
 }
 

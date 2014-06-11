@@ -12,10 +12,11 @@ var _ common.MsgHandlerIf = new(PaxosMsgHandler)
 type PaxosMsgHandler struct {
 	srvView *ServerView
 	lg      common.LogPlayerIf
+	tpc common.TPC
 }
 
-func NewPaxosMsgHandler(srvView *ServerView, lg common.LogPlayerIf) common.MsgHandlerIf {
-	return &PaxosMsgHandler{srvView: srvView, lg: lg}
+func NewPaxosMsgHandler(srvView *ServerView, lg common.LogPlayerIf, tpc common.TPC) common.MsgHandlerIf {
+	return &PaxosMsgHandler{srvView: srvView, lg: lg, tpc: tpc}
 }
 
 // Handle paxos message, ctnt.head is "paxos" already
@@ -141,6 +142,8 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 
 	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =", pb.ProValue, "view=", pb.VID, pb.View)
 
+	self.srvView.SetMasterId(pb.ProValue)
+	self.srvView.SetView(pb.VID, pb.View)
 	// check if self is master, then transfer data to new node
 	if self.srvView.Id == pb.ProValue {
 		nodes := self.srvView.NodesNotInView(pb.View)
@@ -160,11 +163,13 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 				}
 			}
 		}
+
+		//TODO: replay logs from GLB to the largest sn
+		//self.
+
 	}
 
 	// set self mid, vid and view, state
-	self.srvView.SetMasterId(pb.ProValue)
-	self.srvView.SetView(pb.VID, pb.View)
 	self.srvView.SetState(common.SrvReady)
 
 	// reply it with accept ok

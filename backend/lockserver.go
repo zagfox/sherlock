@@ -23,8 +23,9 @@ type LockServer struct {
 	srvView *paxos.ServerView // structure to store self: server Id, masterid, state
 
 	ds   common.DataStoreIf // underlying data store with lock map and log
-	ls   common.LockStoreIf // lock rpc entry
-	lg	 *lockstore.LogPlayer
+	ls   common.LockStoreIf//*lockstore.LockStoreStub // lock rpc entry
+	lg	 common.LogPlayerIf
+	tpc	 common.TPC
 	msg	 *message.MsgClientFactory
 }
 
@@ -43,10 +44,11 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 	ds := lockstore.NewDataStore()
 	lg := lockstore.NewLogPlayer(ds, srvView, msg)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
+	lstub := lockstore.NewLockStoreStub(ls)
 
 	return &LockServer{
 		bc: bc, srvView: srvView,
-		srvs: srvs, ds: ds, ls: ls, lg: lg,
+		srvs: srvs, ds: ds, ls: lstub, lg: lg, tpc: common.TPC(ls),
 	}
 }
 
@@ -109,7 +111,7 @@ func (self *LockServer) startLockService() {
 func (self *LockServer) startMsgListener() {
 	b := self.bc
 	// Start msg listener, it is an rpc server
-	msghandler := NewServerMsgHandler(self.srvView, self.ds, self.lg)
+	msghandler := NewServerMsgHandler(self.srvView, self.ds, self.lg, self.tpc)
 	msglistener := message.NewMsgListener(msghandler)
 	ready := make(chan bool, 1)
 

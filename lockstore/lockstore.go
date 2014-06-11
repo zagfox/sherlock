@@ -15,6 +15,7 @@ import (
 )
 
 var _ common.LockStoreIf = new(LockStore)
+var _ common.TPC = new(LockStore)
 
 // struct to store lock infomation
 type LockStore struct {
@@ -25,12 +26,12 @@ type LockStore struct {
 	srvs []common.MessageIf
 
 	//data store for log and lock map queue
-	ds *DataStore
+	ds common.DataStoreIf
 
-	lg *LogPlayer
+	lg common.LogPlayerIf
 }
 
-func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds *DataStore, lg *LogPlayer) *LockStore {
+func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds common.DataStoreIf, lg common.LogPlayerIf) *LockStore {
 	//TODO:Start a thread here to examine the lock lease
 	return &LockStore{
 		srvView: srvView,
@@ -140,7 +141,7 @@ func (self *LockStore) getQueue(lname string) ([]string, bool) {
 }
 
 //The 2PC implementation
-func (self *LockStore) twophasecommit(log common.Log) bool {
+func (self *LockStore) TwoPhaseCommit(log common.Log) bool {
 //	fmt.Println("2PC")
 //	fmt.Println(log.ToString())
 	vid, peers := self.srvView.GetView()
@@ -227,7 +228,7 @@ func (self *LockStore) appendQueue(qname, item string) bool {
 		LockName: qname,
 		UserName: item,
 	}
-	return self.twophasecommit(log)
+	return self.TwoPhaseCommit(log)
 }
 
 func (self *LockStore) popQueue(qname, item string) bool {
@@ -238,5 +239,30 @@ func (self *LockStore) popQueue(qname, item string) bool {
 		LockName: qname,
 		UserName: item,
 	}
-	return self.twophasecommit(log)
+	return self.TwoPhaseCommit(log)
+}
+
+func NewLockStoreStub(ls *LockStore) common.LockStoreIf{
+	return &LockStoreStub{ls:ls}
+}
+
+type LockStoreStub struct{
+	ls *LockStore
+}
+
+func (self *LockStoreStub) Acquire(lu common.LUpair, reply *common.Content) error{
+	fmt.Println("!!!")
+	return self.ls.Acquire(lu, reply)
+}
+
+func (self *LockStoreStub) Release(lu common.LUpair, reply *common.Content) error {
+	return self.ls.Release(lu, reply)
+}
+
+func (self *LockStoreStub) ListLock(uname string, cList *common.List) error {
+	return self.ls.ListLock(uname, cList)
+}
+
+func (self *LockStoreStub) ListQueue(lname string, cList *common.List) error {
+	return self.ls.ListQueue(lname, cList)
 }
