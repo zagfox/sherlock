@@ -243,6 +243,8 @@ func (self *LogPlayer) notify(lname string) error {
 	fmt.Println(ctnt.Body)
 	sender.Msg(ctnt, &reply)
 
+	fmt.Println("logplayer notify, msg", self.msg)
+
 	return nil
 }
 

@@ -44,6 +44,15 @@ type DataStoreIf interface {
 	// get all information
 	GetAll() map[string] []string
 
+	// Get all acquired lu pair
+	GetAllLock() []LUpair
+
+	// Get all locks own by a user
+	GetUserLock(uname string) []string
+
+	// Get users who have lock
+	GetAllUser() []string
+
 	// apply wrap
 	ApplyWraper(sw StoreWraper)
 }

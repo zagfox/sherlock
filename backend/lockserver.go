@@ -25,7 +25,8 @@ type LockServer struct {
 	ds   common.DataStoreIf // underlying data store with lock map and log
 	ls   common.LockStoreIf // lock rpc entry
 	lg	 *lockstore.LogPlayer
-	msg	 *message.MsgClientFactory
+
+	clts *message.MsgClientFactory
 }
 
 func NewLockServer(bc *common.BackConfig) *LockServer {
@@ -38,15 +39,16 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
 	// server info
 	srvView := paxos.NewServerView(bc.Id, len(bc.Peers), 0, common.SrvReady, srvs)
 
-	msg := message.NewMsgClientFactory()
+	clts := message.NewMsgClientFactory()
 	// data  store and lock store, and log store
 	ds := lockstore.NewDataStore()
-	lg := lockstore.NewLogPlayer(ds, srvView, msg)
+	lg := lockstore.NewLogPlayer(ds, srvView, clts)
 	ls := lockstore.NewLockStore(srvView, srvs, ds, lg)
 
 	return &LockServer{
 		bc: bc, srvView: srvView,
 		srvs: srvs, ds: ds, ls: ls, lg: lg,
+		clts: clts,
 	}
 }
 
@@ -69,6 +71,8 @@ func (self *LockServer) Start() {
 	go self.startLogPlayer()
 
 	go self.startViewChecker()
+
+	go self.startLeaseChecker()
 
 	/*
 		if self.bc.Ready != nil {
@@ -135,8 +139,50 @@ func (self *LockServer) startLogPlayer() {
 	self.lg.Serve()
 }
 
+// Thread that chek if client is alive
+func (self *LockServer) startLeaseChecker() {
+	fmt.Println("In lease checker")
+
+	var ctnt, reply common.Content
+	mTimeout := make(map[string]bool)  // record if client is in timeout
+
+	// check if clients are alive periodically
+	for ;;time.Sleep(common.LeasePeriod) {
+		if self.bc.Id != self.srvView.GetMasterId() {
+			continue
+		}
+
+		// get current locks, and iterate through them
+		curUser := self.ds.GetAllUser()
+		for _, uname := range(curUser) {
+			sender := self.clts.GetMsgClient(uname)
+			err := sender.Msg(ctnt, &reply)
+			if err == nil {
+				continue
+			}
+			// has error, need to handle
+			_, ok := mTimeout[uname]
+			if !ok {
+				// mark it as in timeout phase
+				fmt.Println("lockserver", self.bc.Id, curUser, "execeed lease")
+				mTimeout[uname] = true
+			} else {
+				// take back all its lock
+				fmt.Println("lockserver", self.bc.Id, "timeout take lock back from ", curUser)
+				locks := self.ds.GetUserLock(uname)
+				fmt.Println(locks)
+				for _, l := range(locks) {
+					self.ls.Release(common.LUpair{Lockname:l, Username:uname}, &reply)
+				}
+				fmt.Println("lock all released")
+			}
+		}
+	}
+}
+
+// Thread that start view checker, would issue paxos
 func (self *LockServer) startViewChecker() {
-	fmt.Println("In view checker")
+	// fmt.Println("In view checker")
 	var ctnt, reply common.Content
 	for {
 		// check if the view needs update`
@@ -166,5 +212,8 @@ func (self *LockServer) startViewChecker() {
 		// sleep 1000+rand(200)ms
 		rand.Seed(time.Now().UTC().UnixNano())
 		time.Sleep(time.Millisecond*time.Duration(1000+(rand.Int()%500)))
+
 	}
 }
+
+

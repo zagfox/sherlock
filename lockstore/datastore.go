@@ -20,7 +20,7 @@ func NewDataStore() *DataStore {
 	}
 }
 
-func (self *DataStore)ApplyWraper(sw common.StoreWraper){
+func (self *DataStore) ApplyWraper(sw common.StoreWraper){
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	self.mqueue = make(map[string] []string)
@@ -29,7 +29,7 @@ func (self *DataStore)ApplyWraper(sw common.StoreWraper){
 	}
 }
 
-func (self *DataStore)GetAll() map[string] []string{
+func (self *DataStore) GetAll() map[string] []string{
 	self.lock.Lock()
 	defer self.lock.Unlock()
 	locks := make(map[string] []string)
@@ -37,6 +37,61 @@ func (self *DataStore)GetAll() map[string] []string{
 		locks[k] = v[:]
 	}
 	return locks
+}
+
+// Get all acquired lu pair
+func (self *DataStore) GetAllLock() []common.LUpair {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	retList := make([]common.LUpair, 0)
+	for k, v := range self.mqueue {
+		if len(v) == 0 {
+			continue
+		}
+		retList = append(retList, common.LUpair{Lockname:k, Username:v[0]})
+	}
+	return retList
+}
+
+// Get all locks own by a user
+func (self *DataStore) GetUserLock(uname string) []string {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	retList := make([]string, 0)
+	for k, v := range self.mqueue {
+		if len(v) == 0 {
+			continue
+		}
+		if v[0] != uname {
+			continue
+		}
+		retList = append(retList, k)
+	}
+	return retList
+}
+
+// Get users who have lock
+func (self *DataStore) GetAllUser() []string {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
+	// get all identical users
+	mUsers := make(map[string]bool)
+	for _, v := range self.mqueue {
+		if len(v) == 0 {
+			continue
+		}
+		mUsers[v[0]] = true
+	}
+
+	// put them in a list
+	users := make([]string, 0)
+	for k, _ := range mUsers {
+		users = append(users, k)
+	}
+	return users
 }
 
 func (self *DataStore) GetQueue(qname string) ([]string, bool) {

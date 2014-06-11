@@ -8,6 +8,7 @@ import (
 )
 
 type MsgClientFactory struct {
+	lock sync.Mutex
 	mclients map[string]common.MessageIf
 }
 
@@ -18,11 +19,18 @@ func NewMsgClientFactory() *MsgClientFactory {
 }
 
 func (self *MsgClientFactory) GetMsgClient(name string) common.MessageIf {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	if _, ok := self.mclients[name]; !ok {
 		self.mclients[name] = NewMsgClient(name)
 	}
+
 	return self.mclients[name]
 }
+
+
+
 
 var _ common.MessageIf = new(MsgClient)
 

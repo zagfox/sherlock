@@ -114,6 +114,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	return nil
 }
 
+// list a wait queue for a lock
 func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	if cList == nil {
 		return nil
@@ -126,10 +127,12 @@ func (self *LockStore) ListQueue(lname string, cList *common.List) error {
 	return nil
 }
 
+// list queue owned by an user
 func (self *LockStore) ListLock(uname string, cList *common.List) error {
 	if cList == nil {
 		return nil
 	}
+	cList.L = self.ds.GetUserLock(uname)
 
 	return nil
 }

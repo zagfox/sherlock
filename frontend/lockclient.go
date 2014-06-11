@@ -78,7 +78,7 @@ func (self *lockclient) setMid(mid int) {
 
 // Acquire and Release
 func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
-	//set lu username
+	//set lu username, kind of tricky here...
 	lu.Username = self.laddr
 
 	// create channel for this lock
@@ -175,6 +175,7 @@ func (self *lockclient) ListQueue(lname string, cList *common.List) error {
 func (self *lockclient) ListLock(uname string, cList *common.List) error {
 	self.ListLocalLock()
 
+	uname = self.laddr
 	mid := self.getMid()
 	return self.clts[mid].ListLock(uname, cList)
 }
