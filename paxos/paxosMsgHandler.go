@@ -143,13 +143,15 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 
 	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =", pb.ProValue, "view=", pb.VID, pb.View)
 
+	// get newly enrolled nodes
+	nodes := self.srvView.NodesNotInView(pb.View)
+
 	self.srvView.SetMasterId(pb.ProValue)
 	self.srvView.SetView(pb.VID, pb.View)
 	// check if self is master, then transfer data to new node
 	if self.srvView.Id == pb.ProValue {
-		nodes := self.srvView.NodesNotInView(pb.View)
+		fmt.Println("paxos msg handler", pb.View, nodes)
 		if len(nodes) != 0 {
-
 			// prepare send message
 			var ctnt, reply common.Content
 			bytes, _ := json.Marshal(self.lg.GetStoreWraper())
@@ -165,7 +167,7 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 			}
 		}
 
-		//TODO: replay logs from GLB to the largest sn
+		// replay logs from GLB to the largest sn
 		glb := self.lg.GetGLB()
 		played := glb
 		logs := self.lg.GetLogs()[:]

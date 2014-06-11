@@ -238,7 +238,7 @@ func (self *PaxosManager) phasePrepare() string {
 			// network error during paxos
 			// Plan: go on
 		}
-		fmt.Println(reply[v])
+		//fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
@@ -337,7 +337,7 @@ func (self *PaxosManager) phaseAccept() string {
 			// error during paxos
 			// Plan: go on
 		}
-		fmt.Println(reply[v])
+		//fmt.Println(reply[v])
 		ch_finish <- "finish"
 	}
 
