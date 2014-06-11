@@ -254,7 +254,6 @@ type LockStoreStub struct{
 }
 
 func (self *LockStoreStub) Acquire(lu common.LUpair, reply *common.Content) error{
-	fmt.Println("!!!")
 	return self.ls.Acquire(lu, reply)
 }
 
