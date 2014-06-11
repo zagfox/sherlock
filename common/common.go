@@ -30,6 +30,11 @@ type LockStoreIf interface {
 	ListQueue(lname string, cList *List) error
 }
 
+type TPC interface {
+	// 2PC implementation
+	TwoPhaseCommit(log Log) bool
+}
+
 // Interface to a data storage
 type DataStoreIf interface {
 	// get the whole queue

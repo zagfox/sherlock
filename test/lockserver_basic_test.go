@@ -59,7 +59,7 @@ func TestLockServerBasic(t *testing.T) {
 			alive[id] = 1
 		}
 		log.Println(alive)
-		time.Sleep(15*time.Second)
+		time.Sleep(5*time.Second)
 
 	}
 

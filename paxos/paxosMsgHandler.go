@@ -5,6 +5,7 @@ import (
 	"fmt"
 	//"time"
 	"sherlock/common"
+	"sort"
 )
 
 var _ common.MsgHandlerIf = new(PaxosMsgHandler)
@@ -12,10 +13,11 @@ var _ common.MsgHandlerIf = new(PaxosMsgHandler)
 type PaxosMsgHandler struct {
 	srvView *ServerView
 	lg      common.LogPlayerIf
+	tpc common.TPC
 }
 
-func NewPaxosMsgHandler(srvView *ServerView, lg common.LogPlayerIf) common.MsgHandlerIf {
-	return &PaxosMsgHandler{srvView: srvView, lg: lg}
+func NewPaxosMsgHandler(srvView *ServerView, lg common.LogPlayerIf, tpc common.TPC) common.MsgHandlerIf {
+	return &PaxosMsgHandler{srvView: srvView, lg: lg, tpc: tpc}
 }
 
 // Handle paxos message, ctnt.head is "paxos" already
@@ -141,6 +143,8 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 
 	fmt.Println("paxosHandler", self.srvView.Id, "> receive decide: mid =", pb.ProValue, "view=", pb.VID, pb.View)
 
+	self.srvView.SetMasterId(pb.ProValue)
+	self.srvView.SetView(pb.VID, pb.View)
 	// check if self is master, then transfer data to new node
 	if self.srvView.Id == pb.ProValue {
 		nodes := self.srvView.NodesNotInView(pb.View)
@@ -160,11 +164,32 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 				}
 			}
 		}
+
+		//TODO: replay logs from GLB to the largest sn
+		glb := self.lg.GetGLB()
+		played := glb
+		logs := self.lg.GetLogs()[:]
+		sort.Sort(logs)
+		//Go through the logs and restart 2PC
+		for _, log := range logs{
+			if log.SN > glb{
+				if log.SN == played + 1{
+				//Play this log
+					self.tpc.TwoPhaseCommit(*log)
+					played++
+				}else if log.SN > played + 1{
+				//Send abort to 2pc
+					for played + 1 < log.SN{
+						abort := common.Log{SN:played+1,Phase:"abort"}
+						self.tpc.TwoPhaseCommit(abort)
+						played++
+					}
+				}
+			}
+		}
 	}
 
 	// set self mid, vid and view, state
-	self.srvView.SetMasterId(pb.ProValue)
-	self.srvView.SetView(pb.VID, pb.View)
 	self.srvView.SetState(common.SrvReady)
 
 	// reply it with accept ok
