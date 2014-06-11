@@ -5,6 +5,7 @@ import (
 	"fmt"
 	//"time"
 	"sherlock/common"
+	"sort"
 )
 
 var _ common.MsgHandlerIf = new(PaxosMsgHandler)
@@ -165,8 +166,27 @@ func (self *PaxosMsgHandler) HandleDecide(pb common.PaxosBody, reply *common.Con
 		}
 
 		//TODO: replay logs from GLB to the largest sn
-		//self.
-
+		glb := self.lg.GetGLB()
+		played := glb
+		logs := self.lg.GetLogs()[:]
+		sort.Sort(logs)
+		//Go through the logs and restart 2PC
+		for _, log := range logs{
+			if log.SN > glb{
+				if log.SN == played + 1{
+				//Play this log
+					self.tpc.TwoPhaseCommit(*log)
+					played++
+				}else if log.SN > played + 1{
+				//Send abort to 2pc
+					for played + 1 < log.SN{
+						abort := common.Log{SN:played+1,Phase:"abort"}
+						self.tpc.TwoPhaseCommit(abort)
+						played++
+					}
+				}
+			}
+		}
 	}
 
 	// set self mid, vid and view, state

@@ -32,7 +32,7 @@ type LockStoreIf interface {
 
 type TPC interface {
 	// 2PC implementation
-//	TwoPhaseCommit(log Log) bool
+	TwoPhaseCommit(log Log) bool
 }
 
 // Interface to a data storage

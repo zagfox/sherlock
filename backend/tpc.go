@@ -87,11 +87,11 @@ func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) er
 			// committed previously is impossible
 			// IF already aborted	-> reply abort
 			if aborted{
-				rep.OK = true
+				rep.OK = false
 			}else{
 			// ELSE					-> write log and reply abort
 				self.lg.AppendLog(msg)
-				rep.OK = true
+				rep.OK = false
 			}
 	}
 	reply.Body = rep.ToString()
