@@ -100,7 +100,7 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 			continue
 		}
 
-		fmt.Println("mid=", mid, "reply=", reply)
+		//fmt.Println("mid=", mid, "reply=", reply)
 		if reply.Head == "NotReady" {
 			time.Sleep(time.Second)
 			continue

@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"fmt"
+	//"fmt"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -122,7 +122,7 @@ func (self *LockServer) startMsgListener() {
 		MsgListener: msglistener,
 		Ready:       ready,
 	}
-	fmt.Println("start msg listener", b.Laddr)
+	//fmt.Println("start msg listener", b.Laddr)
 
 	// no error handling here
 	go message.ServeBack(&msgconfig)
@@ -141,7 +141,7 @@ func (self *LockServer) startLogPlayer() {
 
 // Thread that chek if client is alive
 func (self *LockServer) startLeaseChecker() {
-	fmt.Println("In lease checker")
+	//fmt.Println("In lease checker")
 
 	var ctnt, reply common.Content
 	mTimeout := make(map[string]bool)  // record if client is in timeout
@@ -164,17 +164,17 @@ func (self *LockServer) startLeaseChecker() {
 			_, ok := mTimeout[uname]
 			if !ok {
 				// mark it as in timeout phase
-				fmt.Println("lockserver", self.bc.Id, curUser, "execeed lease")
+				//fmt.Println("lockserver", self.bc.Id, curUser, "execeed lease")
 				mTimeout[uname] = true
 			} else {
 				// take back all its lock
-				fmt.Println("lockserver", self.bc.Id, "timeout take lock back from ", curUser)
+				//fmt.Println("lockserver", self.bc.Id, "timeout take lock back from ", curUser)
 				locks := self.ds.GetUserLock(uname)
-				fmt.Println(locks)
+				//fmt.Println(locks)
 				for _, l := range(locks) {
 					self.ls.Release(common.LUpair{Lockname:l, Username:uname}, &reply)
 				}
-				fmt.Println("lock all released")
+				//fmt.Println("lock all released")
 			}
 		}
 	}
@@ -207,7 +207,7 @@ func (self *LockServer) startViewChecker() {
 			//fmt.Println("HeartBeat", self.srvView.Id, ": request update view-> vid =", vid, " view =", view)
 			self.srvView.RequestUpdateView()
 			//fmt.Println("HeartBeat", self.srvView.Id, ": updateview complete")
-			fmt.Println()
+			//fmt.Println()
 		}
 		// sleep 1000+rand(200)ms
 		rand.Seed(time.Now().UTC().UnixNano())

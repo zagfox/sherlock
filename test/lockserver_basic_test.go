@@ -2,8 +2,8 @@ package test
 
 import (
 	"os/exec"
-	"testing"
 	"strconv"
+	"testing"
 	//"strings"
 	//"bytes"
 	"log"
@@ -46,7 +46,7 @@ func TestLockServerBasic(t *testing.T) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	for {
 		id = rand.Int() % 5
-		if alive[id] == 1{
+		if alive[id] == 1 {
 			if aliveNum(alive) > 2 {
 				servers[id].Process.Kill()
 				alive[id] = 0
@@ -59,7 +59,7 @@ func TestLockServerBasic(t *testing.T) {
 			alive[id] = 1
 		}
 		log.Println(alive)
-		time.Sleep(5*time.Second)
+		time.Sleep(5 * time.Second)
 
 	}
 
