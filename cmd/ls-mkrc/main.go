@@ -20,6 +20,7 @@ func main() {
 
 	srvPort := 22000
 	srvMsgPort := 23000
+	//cltPort := 26999
 	cltMsgPort := 27000
 
 	rc := new(common.RC)

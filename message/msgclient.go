@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// msg client factory, produce msg client
 type MsgClientFactory struct {
 	lock sync.Mutex
 	mclients map[string]common.MessageIf
@@ -32,6 +33,7 @@ func (self *MsgClientFactory) GetMsgClient(name string) common.MessageIf {
 
 
 
+// msg client
 var _ common.MessageIf = new(MsgClient)
 
 type MsgClient struct {

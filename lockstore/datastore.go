@@ -143,6 +143,7 @@ func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 		return "", false
 	}
 	q = q[1:]
+	self.mqueue[qname] = q
 	if len(q) == 0 {
 		delete(self.mqueue, qname)
 	}
