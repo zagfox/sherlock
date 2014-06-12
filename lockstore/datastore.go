@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	"fmt"
+//	"fmt"
 	"sherlock/common"
 	"sync"
 )
@@ -12,12 +12,25 @@ var _ common.DataStoreIf = new(DataStore)
 type DataStore struct {
 	lock   sync.Mutex
 	mqueue map[string] []string
+	locks map[string] *sync.Mutex
 }
 
 func NewDataStore() *DataStore {
 	return &DataStore{
 		mqueue: make(map[string] []string),
+		locks: make(map[string] *sync.Mutex),
 	}
+}
+
+func (self *DataStore) getLock(lname string) *sync.Mutex{
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	lock, ok := self.locks[lname]
+	if !ok {
+		lock = new(sync.Mutex)
+		self.locks[lname] = lock
+	}
+	return lock
 }
 
 func (self *DataStore) ApplyWraper(sw common.StoreWraper){
@@ -41,9 +54,6 @@ func (self *DataStore) GetAll() map[string] []string{
 
 // Get all acquired lu pair
 func (self *DataStore) GetAllLock() []common.LUpair {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
 	retList := make([]common.LUpair, 0)
 	for k, v := range self.mqueue {
 		if len(v) == 0 {
@@ -56,9 +66,6 @@ func (self *DataStore) GetAllLock() []common.LUpair {
 
 // Get all locks own by a user
 func (self *DataStore) GetUserLock(uname string) []string {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
 	retList := make([]string, 0)
 	for k, v := range self.mqueue {
 		if len(v) == 0 {
@@ -74,9 +81,6 @@ func (self *DataStore) GetUserLock(uname string) []string {
 
 // Get users who have lock
 func (self *DataStore) GetAllUser() []string {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
 	// get all identical users
 	mUsers := make(map[string]bool)
 	for _, v := range self.mqueue {
@@ -95,16 +99,14 @@ func (self *DataStore) GetAllUser() []string {
 }
 
 func (self *DataStore) GetQueue(qname string) ([]string, bool) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
 	q, ok := self.mqueue[qname]
 	return q[:], ok
 }
 
 func (self *DataStore) AppendQueue(qname, item string) bool {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	l := self.getLock(qname)
+	l.Lock()
+	defer l.Unlock()
 	if _, ok := self.mqueue[qname]; !ok {
 		self.mqueue[qname] = make([]string, 0)
 	}
@@ -122,13 +124,14 @@ func (self *DataStore) AppendQueue(qname, item string) bool {
 	if !exist {
 		self.mqueue[qname] = append(self.mqueue[qname], item)
 	}
-	fmt.Println(self.mqueue[qname])
+//	fmt.Println(self.mqueue[qname])
 	return true
 }
 
 func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	l := self.getLock(qname)
+	l.Lock()
+	defer l.Unlock()
 
 	q, ok := self.mqueue[qname]
 	if !ok || len(q) == 0 {
@@ -143,6 +146,6 @@ func (self *DataStore) PopQueue(qname, uname string) (string, bool) {
 	if len(q) == 0 {
 		delete(self.mqueue, qname)
 	}
-	fmt.Println(self.mqueue[qname])
+//	fmt.Println(self.mqueue[qname])
 	return item, true
 }
