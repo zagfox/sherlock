@@ -58,6 +58,7 @@ func NewLockServer(bc *common.BackConfig) *LockServer {
  *Start several threads
  */
 func (self *LockServer) Start() {
+
 	// Start a thread to listen and handle messages
 	self.startMsgListener()
 
@@ -72,14 +73,11 @@ func (self *LockServer) Start() {
 	// Start a thread to reply log
 	go self.startLogPlayer()
 
+	// start thread to examine if other servers are alive
 	go self.startViewChecker()
 
+	// start thread to check if clients are alive
 	go self.startLeaseChecker()
-
-	/*
-		if self.bc.Ready != nil {
-			self.bc.Ready <- true
-		}*/
 
 	select {}
 }

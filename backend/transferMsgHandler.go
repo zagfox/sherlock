@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"fmt"
 	"encoding/json"
 	"sherlock/common"
 //	"sherlock/lockstore"
@@ -24,6 +25,7 @@ func (self *TransferMsgHandler) Handle(ctnt common.Content, reply *common.Conten
 	// unmarshal from string
 	var sw common.StoreWraper
 	json.Unmarshal([]byte(ctnt.Body), &sw)
+	fmt.Println("transferMsgHandler", ctnt.Body)
 
 	// do transfer
 	self.ds.ApplyWraper(sw)

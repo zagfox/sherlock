@@ -168,16 +168,67 @@ func (self *lockclient) Release(lu common.LUpair, reply *common.Content) error {
 }
 
 func (self *lockclient) ListQueue(lname string, cList *common.List) error {
-	mid := self.getMid()
-	return self.clts[mid].ListQueue(lname, cList)
+	// find a machine that could be connected
+	var mid int
+	//var err error
+	for {
+		mid = self.getMid()
+		self.clts[mid].ListQueue(lname, cList)
+
+		/*if err != nil {
+			self.setMid(mid + 1)
+			continue
+		}
+
+		if reply.Head == "NotReady" {
+			time.Sleep(time.Second)
+			continue
+		}
+		if reply.Head == "NotMaster" {
+			mid, _ = strconv.Atoi(reply.Body)
+			self.setMid(mid)
+			continue
+		}*/
+
+		break
+	}
+
+	return nil
+
 }
 
 func (self *lockclient) ListLock(uname string, cList *common.List) error {
-	self.ListLocalLock()
+//func (self *lockclient) ListLock(uname string, reply *common.Content) error {
+	//self.ListLocalLock()
 
 	uname = self.laddr
-	mid := self.getMid()
-	return self.clts[mid].ListLock(uname, cList)
+
+	// find a machine that could be connected
+	var mid int
+	//var err error
+	for {
+		mid = self.getMid()
+		self.clts[mid].ListLock(uname, cList)
+
+		/*if err != nil {
+			self.setMid(mid + 1)
+			continue
+		}
+
+		if reply.Head == "NotReady" {
+			time.Sleep(time.Second)
+			continue
+		}
+		if reply.Head == "NotMaster" {
+			mid, _ = strconv.Atoi(reply.Body)
+			self.setMid(mid)
+			continue
+		}*/
+
+		break
+	}
+
+	return nil
 }
 //not an rpc interface, check lock locks
 func (self *lockclient) ListLocalLock() error {

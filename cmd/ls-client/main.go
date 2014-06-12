@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
+	"errors"
 
 	"sherlock/common"
 	"sherlock/frontend"
@@ -16,6 +17,15 @@ import (
 func logError(e error) {
 	if e != nil {
 		fmt.Fprintln(os.Stderr, e)
+		log.Fatal(e)
+	}
+}
+
+func checkargs(args []string, n int) error {
+	if len(args) < n {
+		return errors.New("args error")
+	} else {
+		return nil
 	}
 }
 
@@ -34,25 +44,29 @@ func runCmd(s common.LockStoreIf, args []string) bool {
 	var reply common.Content
 	var cList common.List
 
-	if len(args) < 2 {
+	if len(args) < 1 {
 		fmt.Println("bad command, try \"help\".")
 		return false
 	}
 
 	cmd := args[0]
-	lu := common.LUpair{Lockname: args[1], Username: "default"}
 	switch cmd {
 	case "a":
+		logError(checkargs(args, 2))
+		lu := common.LUpair{Lockname: args[1], Username: "default"}
 		logError(s.Acquire(lu, &reply))
 		fmt.Println(reply)
 	case "r":
+		logError(checkargs(args, 2))
+		lu := common.LUpair{Lockname: args[1], Username: "default"}
 		logError(s.Release(lu, &reply))
 		fmt.Println(reply)
 	case "q":
+		logError(checkargs(args, 2))
 		logError(s.ListQueue(args[1], &cList))
 		fmt.Println(cList)
 	case "l":
-		logError(s.ListLock(lu.Username, &cList))
+		logError(s.ListLock("default", &cList))
 		fmt.Println(cList)
 	default:
 		logError(fmt.Errorf("bad command, try \"help\"."))
