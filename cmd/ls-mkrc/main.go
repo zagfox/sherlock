@@ -28,13 +28,13 @@ func main() {
 	rc.CltMsgPorts = make([]string, *nclt)
 
 	for i := 0; i < *nsrv; i++ {
-		host := "localhost"
+		host := "172.22.14.213"    //"localhost"
 		rc.SrvPorts[i] = fmt.Sprintf("%s:%d", host, srvPort+i)
 		rc.SrvMsgPorts[i] = fmt.Sprintf("%s:%d", host, srvMsgPort+i)
 	}
 
 	for i := 0; i < *nclt; i++ {
-		host := "localhost"
+		host := "172.22.14.214"//"localhost"
 		rc.CltMsgPorts[i] = fmt.Sprintf("%s:%d", host, cltMsgPort+i)
 	}
 
