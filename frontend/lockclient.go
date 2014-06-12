@@ -42,7 +42,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan, mlocks:mlocks}
 
 	// start sherlock request listener
-	lc.startSherServ()
+	lc.startSherServe()
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -51,8 +51,8 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	return &lc
 }
 
-func (self *lockclient) startSherServ() {
-	sherlistener := sherlock.NewSherListener()
+func (self *lockclient) startSherServe() {
+	sherlistener := sherlock.NewSherListener(self)
 
 	sherConfig := common.SherConfig {
 		Addr:          "localhost:26999",
