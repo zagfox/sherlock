@@ -15,6 +15,12 @@ type Content struct {
 	Body string
 }
 
+// lock interface used by users
+type SherlockIf interface {
+	Acquire(lname string, succ *bool) error
+	Release(lname string, succ *bool) error
+}
+
 // Interface to call a lock operation
 type LockStoreIf interface {
 	// Acquire a lock, input should be {lname, unmae}
@@ -62,6 +68,13 @@ type DataStoreIf interface {
 	ApplyWraper(sw StoreWraper)
 }
 
+// Sherlock listener config
+type SherConfig struct {
+	Addr          string
+	SherListener  SherlockIf
+	Ready         chan bool
+}
+
 // Backend config
 type BackConfig struct {
 	Id    int         // self id
@@ -71,16 +84,16 @@ type BackConfig struct {
 	Ready chan bool // send a value when server is ready
 }
 
-// Interface for msg send/recv
-type MessageIf interface {
-	Msg(msg Content, reply *Content) error
-}
-
 // Config for msg receive server
 type MsgConfig struct {
 	Addr        string
 	MsgListener MessageIf
 	Ready       chan bool
+}
+
+// Interface for msg send/recv
+type MessageIf interface {
+	Msg(msg Content, reply *Content) error
 }
 
 // Interface for message handler

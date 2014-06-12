@@ -20,6 +20,7 @@ func main() {
 
 	srvPort := 22000
 	srvMsgPort := 23000
+	//cltPort := 26999
 	cltMsgPort := 27000
 
 	rc := new(common.RC)
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	for i := 0; i < *nclt; i++ {
-		host := "172.22.14.214"//"localhost"
+		host := "172.22.14.213"//"localhost"
 		rc.CltMsgPorts[i] = fmt.Sprintf("%s:%d", host, cltMsgPort+i)
 	}
 

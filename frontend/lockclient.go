@@ -9,6 +9,7 @@ import (
 	//"encoding/json"
 	"sherlock/common"
 	"sherlock/message"
+	"sherlock/sherlock"
 )
 
 // struct that used by user
@@ -40,11 +41,28 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	// Create lockclient
 	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan, mlocks:mlocks}
 
+	// start sherlock request listener
+	lc.startSherServ()
+
 	//Start msg listener and handler
 	lc.startMsgListener()
 	//go lc.startMsgHandler()
 
 	return &lc
+}
+
+func (self *lockclient) startSherServ() {
+	sherlistener := sherlock.NewSherListener()
+
+	sherConfig := common.SherConfig {
+		Addr:          "localhost:26999",
+		SherListener:  sherlistener,
+		Ready:         nil,
+	}
+	fmt.Println("start sherlock listener")
+
+	go sherlock.SherServe(&sherConfig)
+
 }
 
 func (self *lockclient) startMsgListener() {
