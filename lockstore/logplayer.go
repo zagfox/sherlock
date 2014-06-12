@@ -1,7 +1,7 @@
 package lockstore
 
 import (
-	"fmt"
+//	"fmt"
 
 	"encoding/json"
 
@@ -197,14 +197,14 @@ func (self *LogPlayer) play(){
 			}else if log.Phase == "commit"{
 				switch log.Op{
 					case "append":
-						fmt.Println("appending "+log.UserName+" to "+log.LockName)
+					//	fmt.Println("appending "+log.UserName+" to "+log.LockName)
 						_, ok := self.ds.GetQueue(log.LockName)
 						self.ds.AppendQueue(log.LockName, log.UserName)
 						if !ok{
 							go self.notify(log.LockName)
 						}
 					case "pop":
-						fmt.Println("poping "+log.UserName+" from "+log.LockName)
+					//	fmt.Println("poping "+log.UserName+" from "+log.LockName)
 						if _, ok := self.ds.PopQueue(log.LockName, log.UserName); ok{
 							go self.notify(log.LockName)
 						}
@@ -247,11 +247,11 @@ func (self *LogPlayer) notify(lname string) error {
 	ctnt.Head = "LockAcquired"
 	ctnt.Body = string(bytes)
 
-	fmt.Println("notify")
-	fmt.Println(ctnt.Body)
+//	fmt.Println("notify")
+//	fmt.Println(ctnt.Body)
 	sender.Msg(ctnt, &reply)
 
-	fmt.Println("logplayer notify, msg", self.msg)
+//	fmt.Println("logplayer notify, msg", self.msg)
 
 	return nil
 }
