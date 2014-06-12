@@ -2,7 +2,7 @@
 package lockstore
 
 import (
-	"fmt"
+//	"fmt"
 //	"errors"
 //	"sync"
 	"encoding/json"
@@ -43,9 +43,9 @@ func NewLockStore(srvView *paxos.ServerView, srvs []common.MessageIf, ds common.
 
 // In go rpc, only support for two input args, (args, reply)
 func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
-	b, e := json.Marshal(self.lg.GetStoreWraper())
-	fmt.Println(e)
-	fmt.Println(string(b))
+//	b, e := json.Marshal(self.lg.GetStoreWraper())
+//	fmt.Println(e)
+//	fmt.Println(string(b))
 	// check if server is ready
 	state := self.srvView.GetState()
 	//fmt.Println("lockserver", state)
@@ -70,7 +70,7 @@ func (self *LockStore) Acquire(lu common.LUpair, reply *common.Content) error {
 	reply.Body = string(bytes)
 	//put in queue
 	self.appendQueue(lname, uname)
-	fmt.Println("rpc returned")
+//	fmt.Println("rpc returned")
 	return nil
 }
 
@@ -100,7 +100,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	q, ok := self.getQueue(lname)
 	if !ok {
 		reply.Head = "LockNotFound"
-	fmt.Println("rpc returned")
+//	fmt.Println("rpc returned")
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func (self *LockStore) Release(lu common.LUpair, reply *common.Content) error {
 	} else {
 		reply.Head = "LockNotOwn"
 	}
-	fmt.Println("rpc returned")
+//	fmt.Println("rpc returned")
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (self *LockStore) TwoPhaseCommit(log common.Log) bool {
 	bad := false
 	//Propagate the GLB when doing 2PC
 	log.LB = self.lg.GetGLB()
-	fmt.Println(log.ToString())
+//	fmt.Println(log.ToString())
 	//Try to get the new GLB
 	glb := self.lg.GetLB()
 	lbchan := make(chan uint64, len(peers))
@@ -254,7 +254,6 @@ type LockStoreStub struct{
 }
 
 func (self *LockStoreStub) Acquire(lu common.LUpair, reply *common.Content) error{
-	fmt.Println("!!!")
 	return self.ls.Acquire(lu, reply)
 }
 
