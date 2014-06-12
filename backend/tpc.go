@@ -27,8 +27,8 @@ func NewTpcMsgHandler(lg common.LogPlayerIf, view *paxos.ServerView) common.MsgH
 func (self *TpcMsgHandler) Handle(ctnt common.Content, reply *common.Content) error {
 	// get lock of the logs, so it won't be changed by the log player
 	// also make sure only one message is being handled at a time
-	self.lock.Lock()
-	defer self.lock.Unlock()
+//	self.lock.Lock()
+//	defer self.lock.Unlock()
 	msg := common.ParseString(ctnt.Body)
 	// discard the message if it is from previous view or it is before the GLB
 	vid, _ := self.view.GetView()
