@@ -132,18 +132,24 @@ func (self *lockclient) Acquire(lu common.LUpair, reply *common.Content) error {
 		break
 	}
 
+	//fmt.Println("lockclient request sent")
+	//fmt.Println(reply)
+
 	// handle reply Head
 	switch reply.Head {
 	case "LockQueuing":
 		// in normal case, request goes to log, return this
 		ch, _ := self.mAcqChan[lu]
+		//fmt.Println("waiting for channel")
 		<-ch // channel must have been set up
+		//fmt.Println("channel get something")
 		reply.Head = "LockAcquiredByEvent"
 
 		//mark that lock is acquired
 		self.mlocks[lu.Lockname] = true
 	default:
 	}
+	//fmt.Println("lockclient return ")
 	return nil
 }
 

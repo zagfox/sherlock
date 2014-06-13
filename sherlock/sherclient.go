@@ -1,6 +1,7 @@
 package sherlock
 
 import (
+	//"fmt"
 	"sync"
 	"net/rpc"
 	"sherlock/common"
@@ -37,16 +38,19 @@ func (self *SherClient) connect(firsttime bool) error {
 }
 
 func (self *SherClient) Acquire(lname string, succ *bool) error {
+	//fmt.Println("sherclient acquire")
 	if e := self.connect(true); e != nil {
 		return e
 	}
 
+	//fmt.Println("sherclient before call")
 	e := self.srv.Call("SherListener.Acquire", lname, succ)
 	for ; e != nil; e = self.srv.Call("SherListener.Acquire", lname, succ) {
 		if e = self.connect(false); e != nil {
 			return e
 		}
 	}
+	//fmt.Println("sherclient acquire return")
 	return nil
 }
 

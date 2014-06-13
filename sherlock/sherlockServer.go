@@ -2,7 +2,7 @@
 package sherlock
 
 import (
-	"fmt"
+	//"fmt"
 	"sherlock/common"
 )
 
@@ -17,10 +17,14 @@ func NewSherListener(lc common.LockStoreIf) common.SherlockIf {
 func (self *SherListener) Acquire(lname string, succ *bool) error {
 	lu := common.LUpair{Lockname:lname, Username:"default"}
 	var ctnt common.Content
-	fmt.Println("sherlock before acquire")
+	//fmt.Println("sherlock before acquire")
 	err := self.lc.Acquire(lu, &ctnt)
-	fmt.Println(err)
-	return nil
+	//fmt.Println("sherlock after acquire", err)
+	if err == nil {
+		//fmt.Println("sherlock set succ")
+		*succ = true
+	}
+	return err
 }
 
 func (self *SherListener) Release(lname string, succ *bool) error {
