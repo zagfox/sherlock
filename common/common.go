@@ -1,5 +1,11 @@
 package common
 
+var GoPath = "/classes/cse223b/sp14/cse223f7zhu/gopath/"
+
+var DefaultRCPath = GoPath + "src/sherlock/common/conf.rc"
+
+var BinPath = GoPath+"bin/"
+
 type LUpair struct {
 	Lockname string
 	Username string

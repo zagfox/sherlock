@@ -18,7 +18,7 @@ var (
 
 func startLocalServer() *exec.Cmd {
 	//func startLocalServer
-	bin_path := "/classes/cse223b/sp14/cse223f7zhu/gopath/bin/"
+	bin_path := common.BinPath   //"/classes/cse223b/sp14/cse223y4duan/gopath/bin/"
 	server := exec.Command(bin_path + "ls-server")
 	err := server.Start()
 	if err != nil {
