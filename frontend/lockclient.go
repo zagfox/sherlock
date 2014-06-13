@@ -42,7 +42,7 @@ func NewLockClient(saddrs []string, laddr string) common.LockStoreIf {
 	lc := lockclient{saddrs: saddrs, mid: 0, clts: clts, laddr: laddr, mAcqChan: mAcqChan, mlocks:mlocks}
 
 	// start sherlock request listener
-	lc.startSherServe()
+//	lc.startSherServe()
 
 	//Start msg listener and handler
 	lc.startMsgListener()
@@ -75,7 +75,7 @@ func (self *lockclient) startMsgListener() {
 		MsgListener: msglistener,
 		Ready:       nil,
 	}
-	fmt.Println("start msg listener", self.laddr)
+//	fmt.Println("start msg listener", self.laddr)
 
 	//no error handling here
 	go message.ServeBack(&msgconfig)

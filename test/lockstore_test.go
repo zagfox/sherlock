@@ -52,10 +52,8 @@ func startLockStore(Id int) common.LockStoreIf {
 
 func basicTestLockStore(s common.LockStoreIf) {
 	// Start testing here
-	lu1 := common.LUpair{Lockname: "l1", Username: "alice"}
-	//lu2 := common.LUpair{Lockname: "l2", Username: "bob"}
+	lu := common.LUpair{Lockname: "l1", Username: "alice"}
 	var reply common.Content
-	//var cList common.List
 
 	//basic test for one user
 	ne(s.Acquire(lu1, &reply))
