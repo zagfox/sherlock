@@ -192,35 +192,35 @@ func (self *LockStore) TwoPhaseCommit(log common.Log) bool {
 	}
 	//Update the GLB here
 	self.lg.UpdateGLB(glb)
-	if commit {
-		log.Phase = "commit"
-	} else {
-		log.Phase = "abort"
-	}
-	//Phase two, broadcast the log to all nodes
-	for _, idx := range peers {
-		go func(idx int) {
-			msg := common.Content{Head: "2pc", Body: log.ToString()}
-			reply := common.Content{}
-			if self.srvs[idx].Msg(msg, &reply) != nil {
-//				self.srvView.DelNode(idx)
-				bad = true
-				rep <- false
-				return
-			}
-			replog := common.ParseString(reply.Body)
-			rep <- replog.OK
-		}(idx)
-	}
-	for i := 0; i < len(peers); i++ {
-		<-rep
-	}
-	//Any node fails, request to update view
-	if bad {
-		go self.srvView.RequestUpdateView()
-		return true
-	}
-	return true
+	go func(){
+		if commit {
+			log.Phase = "commit"
+		} else {
+			log.Phase = "abort"
+		}
+		//Phase two, broadcast the log to all nodes
+		for _, idx := range peers {
+			go func(idx int) {
+				msg := common.Content{Head: "2pc", Body: log.ToString()}
+				reply := common.Content{}
+				if self.srvs[idx].Msg(msg, &reply) != nil {
+					bad = true
+					rep <- false
+					return
+				}
+				replog := common.ParseString(reply.Body)
+				rep <- replog.OK
+			}(idx)
+		}
+		for i := 0; i < len(peers); i++ {
+			<-rep
+		}
+		//Any node fails, request to update view
+		if bad {
+			go self.srvView.RequestUpdateView()
+		}
+	}()
+	return commit
 }
 
 func (self *LockStore) appendQueue(qname, item string) bool {
