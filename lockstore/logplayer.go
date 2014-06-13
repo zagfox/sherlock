@@ -1,7 +1,7 @@
 package lockstore
 
 import (
-	"fmt"
+	//"fmt"
 
 	"encoding/json"
 
@@ -206,7 +206,7 @@ func (self *LogPlayer) play(){
 					case "pop":
 					//	fmt.Println("poping "+log.UserName+" from "+log.LockName)
 						if _, ok := self.ds.PopQueue(log.LockName, log.UserName); ok{
-							fmt.Println(self.ds.GetQueue(log.LockName))
+							//fmt.Println(self.ds.GetQueue(log.LockName))
 							go self.notify(log.LockName)
 						}
 				}
@@ -248,11 +248,11 @@ func (self *LogPlayer) notify(lname string) error {
 	ctnt.Head = "LockAcquired"
 	ctnt.Body = string(bytes)
 
-	fmt.Println("notify")
-	fmt.Println(ctnt.Body)
+	//fmt.Println("notify")
+	//fmt.Println(ctnt.Body)
 	sender.Msg(ctnt, &reply)
 
-	fmt.Println("logplayer notify, msg", self.msg)
+	//fmt.Println("logplayer notify, msg", self.msg)
 
 	return nil
 }
