@@ -1,17 +1,62 @@
+----------------------------------
 Sherlock:
-A distributed lock service
+A distributed lock service, provide same symantic of Mutex.
 
-common:
+Authors:
+Feng Zhu, Yunpeng Duan
+-------------------------------------------------
+
+> backend:
+start the whole back service
+lockserver.go: start all back end thread and service, includes
+			   rpc entry, msg listener, check view, check client
+serverMsgHandler.go: handle message received by server, would forward the msg to 2pc, paxos or transfer handler
+tpc.go: implement of 2 phase commit protocol
+transferMsgHandler: used to handle data transfer, data is converted to string for migration
+
+> cmd:
+runable files
+client: frontend rpc client
+ls-client: frontend client
+ls-mkrc: make config file, used in ls-client and ls-server
+ls-server: start lock service server
+msg-client: start a msg-client
+msg-server: start msg-server
+sherlock:   act as a normal program that actually use the distributed lock
+
+> common:
 definition of interface and common value
 
-lockstore:
+> lockstore: 
 backend storage for lock service
+datastore.go: in-memory storage for lock information, every lock has a queue of users. The first user is the holder of lock
+lockstore.go: RPC entry for lock service, implement check master, check server state logic
+			  use 2pc protocol to ensure data consistency among backends
+logplayer.go: As we use 2pc to remain data consistency, initial operation on lock is represented in the form of logs
+              The logplayer is a process to reply log, and modify content on datastore
 
-backend:
-back service
 
-frontend:
-client usage
+> frontend:
+client side implementation of system, includes
+client.go: rpc layer connection
+lockclient.go: client that handle lock acquire/release, receive information from server
+clientMsgHandler: handle message received from server
 
-cmd:
-runable files
+> message:
+package that provide Msg rpc interface, for communication
+defaultmsghandler.go: a default msg handler, do nothing...
+msgclient.go: rpc level msg client
+msglistener.go: listen for msg and forward to msg handler
+msgserver.go: rpc server for Msg interface
+
+> paxos:
+package that implement paxos protocol
+helpler.go: helpler function
+paxosManager.go: issue paxos three phase protocol, handle reply
+paxosMsgHandler.go: define what to do when receiving paxos message
+serverview.go: the state of a server's view, who's alive, who's master, am I ready?
+
+> sherlock
+
+> test
+

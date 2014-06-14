@@ -46,18 +46,12 @@ func getClient(cid int) common.LockStoreIf {
 	return c
 }
 
-func TestThroughput(t *testing.T) {
-	//func startLocalServer
-	//server := startLocalServer()
-	//time.Sleep(2*time.Second)
-
-	c := getClient(0)
-
-	ch := make(chan bool, 1000)
+func acquire_cur(c common.LockStoreIf, acqNum int) {
+	ch := make(chan bool, acqNum)
 	// start testing
 
 	start := time.Now()
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < acqNum; i++ {
 		go func(i int){
 			lu := common.LUpair{Username: "default"}
 			var reply common.Content
@@ -66,13 +60,13 @@ func TestThroughput(t *testing.T) {
 			ch <- true
 		}(i)
 	}
-	for i := 0; i < 1000; i++{
+	for i := 0; i < acqNum; i++{
 		<-ch
 	}
 	elapsed := time.Since(start)
-	log.Println("acquire time is %s", elapsed)
+	log.Println("acquire", acqNum, "time is", elapsed)
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < acqNum; i++ {
 		go func(i int){
 			lu := common.LUpair{Username: "default"}
 			var reply common.Content
@@ -81,9 +75,24 @@ func TestThroughput(t *testing.T) {
 			ch <- true
 		}(i)
 	}
-	for i := 0; i < 1000; i++{
+	for i := 0; i < acqNum; i++{
 		<-ch
 	}
+}
+
+func TestThroughput(t *testing.T) {
+	//func startLocalServer
+	//server := startLocalServer()
+	//time.Sleep(2*time.Second)
+
+	c := getClient(0)
+
+	acquire_cur(c, 10)
+	acquire_cur(c, 100)
+	acquire_cur(c, 250)
+	acquire_cur(c, 500)
+	acquire_cur(c, 750)
+	acquire_cur(c, 1000)
 
 	// close local server
 	//server.Process.Kill()

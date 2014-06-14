@@ -9,6 +9,8 @@ import (
 	"log"
 	"math/rand"
 	"time"
+
+	"sherlock/common"
 )
 
 func aliveNum(alive []int) int {

@@ -46,6 +46,23 @@ func getClient(cid int) common.LockStoreIf {
 	return c
 }
 
+func acquire(c common.LockStoreIf, Num int) {
+	lu := common.LUpair{Lockname: "l1", Username: "default"}
+	var reply common.Content
+
+	start := time.Now()
+	for i := 0; i < Num; i++ {
+		lu.Lockname = "l"+strconv.Itoa(i)
+		c.Acquire(lu, &reply)
+	}
+	elapsed := time.Since(start)
+	log.Println("acquire", Num, "time is ", elapsed)
+	for i := 0; i < Num; i++ {
+		lu.Lockname = "l"+strconv.Itoa(i)
+		c.Release(lu, &reply)
+	}
+}
+
 func TestLockDelay(t *testing.T) {
 	//func startLocalServer
 	//server := startLocalServer()
@@ -54,18 +71,12 @@ func TestLockDelay(t *testing.T) {
 	c := getClient(0)
 
 	// start testing
-	lu := common.LUpair{Lockname: "l1", Username: "default"}
-	var reply common.Content
-
-	start := time.Now()
-	for i := 0; i < 1000; i++ {
-		lu.Lockname = "l"+strconv.Itoa(i)
-		c.Acquire(lu, &reply)
-	}
-	elapsed := time.Since(start)
-	log.Println("acquire time is %s", elapsed)
-	c.Release(lu, &reply)
-
+	acquire(c, 10)
+	acquire(c, 100)
+	acquire(c, 250)
+	acquire(c, 500)
+	acquire(c, 750)
+	acquire(c, 1000)
 	// close local server
 	//server.Process.Kill()
 }
