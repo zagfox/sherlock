@@ -1,8 +1,8 @@
-6. client could use it in thread
+fixe, 6. client could use it in thread
 
-5. lock lease, server send check(ok), client also need check connection
+fixed, 5. lock lease, server send check(ok), client also need check connection
 
-4. after transfer data, reply log
+fixed, 4. after transfer data, reply log
 
 fixed, 3. paxos too slow, add random time heart beat
 

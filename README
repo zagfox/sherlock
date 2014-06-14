@@ -57,6 +57,10 @@ paxosMsgHandler.go: define what to do when receiving paxos message
 serverview.go: the state of a server's view, who's alive, who's master, am I ready?
 
 > sherlock
+sherclient.go: rpc level sherlock client, could issue acquire/release
+sherlitener.go: listen for sherlock acquire, call lockclient's interface
+sherserv.go:    start server to listen sherlock
 
 > test
+test file
 
